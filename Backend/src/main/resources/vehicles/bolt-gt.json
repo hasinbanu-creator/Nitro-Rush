@@ -1,0 +1,35 @@
+{
+  "id": "bolt-gt",
+  "name": "BOLT GT",
+  "class": "TUNER PRO // CLASS A",
+  "tagline": "LIGHTNING ACCELERATION & AGILITY",
+  "description": "A precision-tuned street weapon engineered for razor-sharp drift lines, instant turbo spool, and exceptional agility on technical circuits.",
+  "stats": {
+    "topSpeed": 84,
+    "acceleration": 88,
+    "handling": 92,
+    "nitro": 82
+  },
+  "nitroConfig": {
+    "maxCapacity": 100,
+    "burnRate": 26,
+    "regenRate": 9.5,
+    "speedMultiplier": 1.35,
+    "accelMultiplier": 2.1
+  },
+  "handlingConfig": {
+    "driftGripRetention": 0.94,
+    "driftTurnMultiplier": 1.38,
+    "baseLateralGrip": 0.85,
+    "lowSpeedAgility": 0.46,
+    "offRoadTractionBonus": 1
+  },
+  "primaryColor": 16733440,
+  "accentColor": 61695,
+  "glowColor": 16742144,
+  "textureKey": "car_bolt_gt",
+  "drivetrain": "RWD • TURBO INLINE-6",
+  "weight": "1,240 KG",
+  "massKg": 1240,
+  "engine": "3.0L TWIN-TURBO (540 HP)"
+}

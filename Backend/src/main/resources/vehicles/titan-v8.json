@@ -1,0 +1,35 @@
+{
+  "id": "titan-v8",
+  "name": "TITAN V8",
+  "class": "MUSCLE BRUTE // CLASS A",
+  "tagline": "COLOSSAL TORQUE & PROLONGED NITRO",
+  "description": "Raw, unadulterated American horsepower boasting a supercharged big-block V8 that delivers massive straight-line momentum and devastating nitro surge.",
+  "stats": {
+    "topSpeed": 90,
+    "acceleration": 82,
+    "handling": 72,
+    "nitro": 98
+  },
+  "nitroConfig": {
+    "maxCapacity": 100,
+    "burnRate": 19.5,
+    "regenRate": 7.5,
+    "speedMultiplier": 1.36,
+    "accelMultiplier": 2.3
+  },
+  "handlingConfig": {
+    "driftGripRetention": 0.96,
+    "driftTurnMultiplier": 1.25,
+    "baseLateralGrip": 0.86,
+    "lowSpeedAgility": 0.35,
+    "offRoadTractionBonus": 1
+  },
+  "primaryColor": 15680580,
+  "accentColor": 16096779,
+  "glowColor": 12131356,
+  "textureKey": "car_titan_v8",
+  "drivetrain": "RWD • SUPERCHARGED V8",
+  "weight": "1,560 KG",
+  "massKg": 1560,
+  "engine": "6.2L SUPERCHARGED HEMI (750 HP)"
+}

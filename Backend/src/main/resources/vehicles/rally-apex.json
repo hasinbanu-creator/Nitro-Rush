@@ -1,0 +1,35 @@
+{
+  "id": "rally-apex",
+  "name": "RALLY APEX",
+  "class": "ALL-TERRAIN AWD // CLASS B",
+  "tagline": "ALL-SURFACE EXPLOSIVE TRACTION",
+  "description": "Dual-differential rally rocket built for immediate zero-to-sixty launching, unstoppable dirt and wet grip, and rugged chassis durability.",
+  "stats": {
+    "topSpeed": 78,
+    "acceleration": 96,
+    "handling": 88,
+    "nitro": 88
+  },
+  "nitroConfig": {
+    "maxCapacity": 100,
+    "burnRate": 27,
+    "regenRate": 9,
+    "speedMultiplier": 1.32,
+    "accelMultiplier": 2.25
+  },
+  "handlingConfig": {
+    "driftGripRetention": 0.93,
+    "driftTurnMultiplier": 1.35,
+    "baseLateralGrip": 0.84,
+    "lowSpeedAgility": 0.5,
+    "offRoadTractionBonus": 1.25
+  },
+  "primaryColor": 61695,
+  "accentColor": 16777215,
+  "glowColor": 165063,
+  "textureKey": "car_rally_apex",
+  "drivetrain": "AWD • VARIABLE TORQUE",
+  "weight": "1,290 KG",
+  "massKg": 1290,
+  "engine": "2.0L TURBOCHARGED 4-CYL (420 HP)"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "viper-r",
+  "name": "VIPER R",
+  "class": "EXOTIC HYPERCAR // CLASS S",
+  "tagline": "UNCOMPROMISING TERMINAL VELOCITY",
+  "description": "An ultra-lightweight aerodynamic carbon silhouette engineered for maximum downforce, blistering top speeds, and sweeping high-speed corners.",
+  "stats": {
+    "topSpeed": 96,
+    "acceleration": 86,
+    "handling": 82,
+    "nitro": 85
+  },
+  "nitroConfig": {
+    "maxCapacity": 100,
+    "burnRate": 25,
+    "regenRate": 8,
+    "speedMultiplier": 1.38,
+    "accelMultiplier": 2
+  },
+  "handlingConfig": {
+    "driftGripRetention": 0.95,
+    "driftTurnMultiplier": 1.3,
+    "baseLateralGrip": 0.87,
+    "lowSpeedAgility": 0.38,
+    "offRoadTractionBonus": 0.95
+  },
+  "primaryColor": 1096065,
+  "accentColor": 15381256,
+  "glowColor": 366185,
+  "textureKey": "car_viper_r",
+  "drivetrain": "MR • MID-ENGINE V10",
+  "weight": "1,180 KG",
+  "massKg": 1180,
+  "engine": "5.2L QUAD-CAM V10 (680 HP)"
+}

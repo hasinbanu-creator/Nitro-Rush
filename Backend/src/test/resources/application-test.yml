@@ -1,0 +1,26 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: nitro-rush-backend-test
+
+nitrorush:
+  websocket:
+    path: /ws/game
+    allowed-origins:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
+      - http://localhost:3000
+    heartbeat-interval-ms: 10000
+    max-frame-size: 4096
+  session:
+    guest-token-prefix: GR-
+    guest-token-entropy-bytes: 16
+    session-timeout-minutes: 60
+
+logging:
+  level:
+    root: INFO
+    com.nitrorush.backend: DEBUG
+
