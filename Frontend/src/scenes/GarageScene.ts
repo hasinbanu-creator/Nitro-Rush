@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { CARS, type CarConfig } from '../data/CarData';
 import { TRACKS } from '../data/TrackData';
 import { selectionState, type SelectionStateData } from '../state/SelectionState';
-import { UIHelpers } from '../utils/UIHelpers';
+import { UIHelpers, CYBER_THEME } from '../utils/UIHelpers';
 import { SoundEffects } from '../utils/SoundEffects';
 
 export class GarageScene extends Phaser.Scene {
@@ -89,6 +89,15 @@ export class GarageScene extends Phaser.Scene {
         this.handleBack();
       }
     });
+
+    this.input.keyboard?.on('keydown-ENTER', () => {
+      if (this.isModalOpen) {
+        this.closeModal();
+        this.launchRaceScene();
+      } else {
+        this.handleContinue();
+      }
+    });
   }
 
   /**
@@ -96,19 +105,30 @@ export class GarageScene extends Phaser.Scene {
    */
   private createAtmosphere(width: number, height: number): void {
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x060812, 0x060812, 0x0c1122, 0x090d1c, 1);
+    bg.fillGradientStyle(CYBER_THEME.BG_DARK, CYBER_THEME.BG_DARK, 0x0c1426, 0x070b16, 1);
     bg.fillRect(0, 0, width, height);
 
-    // Ambient Glows
+    // Subtle cyber grid lines
+    bg.lineStyle(1, CYBER_THEME.CYAN, 0.04);
+    const gridSize = 40;
+    for (let x = 0; x <= width; x += gridSize) {
+      bg.lineBetween(x, 0, x, height);
+    }
+    for (let y = 0; y <= height; y += gridSize) {
+      bg.lineBetween(0, y, width, y);
+    }
+
+    // Ambient Glowing Orbs (Electric Cyan & Neon Purple)
     const ambientLeft = this.add.sprite(width * 0.25, height * 0.5, 'glow_orb')
-      .setScale(4)
+      .setTint(CYBER_THEME.PURPLE)
+      .setScale(3.6)
       .setAlpha(0.2)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const ambientRight = this.add.sprite(width * 0.85, height * 0.3, 'glow_orb')
-      .setTint(0x00f0ff)
+      .setTint(CYBER_THEME.CYAN)
       .setScale(3.5)
-      .setAlpha(0.16)
+      .setAlpha(0.18)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.tweens.add({
@@ -130,6 +150,7 @@ export class GarageScene extends Phaser.Scene {
         .setAngle(90)
         .setScale(Phaser.Math.FloatBetween(0.4, 0.8), Phaser.Math.FloatBetween(0.8, 1.4))
         .setAlpha(Phaser.Math.FloatBetween(0.08, 0.25))
+        .setTint(i % 2 === 0 ? CYBER_THEME.CYAN : CYBER_THEME.PURPLE)
         .setBlendMode(Phaser.BlendModes.ADD);
       this.speedStreaks.push(streak);
     }
@@ -139,53 +160,34 @@ export class GarageScene extends Phaser.Scene {
    * Header Navigation Bar
    */
   private createHeader(width: number): void {
-    const returnTarget = this.isFromTrackSelect ? 'TRACK SELECT' : 'MAIN MENU';
-    UIHelpers.createCyberButton({
-      scene: this,
-      x: 120,
-      y: 45,
-      width: 170,
-      height: 38,
-      label: returnTarget,
-      icon: '◄',
-      isPrimary: false,
-      onClick: () => this.handleBack(),
-    });
-
-    this.add.text(width / 2, 34, 'VEHICLE GARAGE', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '28px',
-      color: '#ffffff',
-      letterSpacing: 2,
-    }).setOrigin(0.5);
-
-    this.add.text(width / 2, 60, '// SELECT YOUR CHASSIS & INSPECT TELEMETRY //', {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#00f0ff',
-      letterSpacing: 1,
-    }).setOrigin(0.5);
+    UIHelpers.createCyberHeader(
+      this,
+      width,
+      'VEHICLE GARAGE',
+      'TUNER BAY // CHASSIS SELECTION',
+      () => this.handleBack()
+    );
 
     // Selected Circuit Context Pill
     if (this.isFromTrackSelect) {
       const selectedTrack = TRACKS.find((t) => t.id === this.stateData.selectedTrackId) || TRACKS[0];
-      const badge = this.add.graphics();
-      badge.fillStyle(0x00f0ff, 0.1);
-      badge.lineStyle(1, 0x00f0ff, 0.5);
-      badge.strokeRoundedRect(width - 290, 26, 240, 36, 4);
-      badge.fillRoundedRect(width - 290, 26, 240, 36, 4);
+      const badge = this.add.graphics().setDepth(55);
+      badge.fillStyle(CYBER_THEME.CYAN, 0.12);
+      badge.lineStyle(1, CYBER_THEME.CYAN, 0.6);
+      badge.strokeRoundedRect(width - 290, 20, 250, 32, 4);
+      badge.fillRoundedRect(width - 290, 20, 250, 32, 4);
 
       this.add.text(
-        width - 170,
-        44,
+        width - 165,
+        36,
         `CIRCUIT: ${selectedTrack.name.toUpperCase()} [${this.stateData.selectedDifficulty}]`,
         {
-          fontFamily: 'monospace',
+          fontFamily: CYBER_THEME.FONT_MONO,
           fontSize: '10px',
           color: '#00f0ff',
           fontStyle: 'bold',
         }
-      ).setOrigin(0.5);
+      ).setOrigin(0.5).setDepth(56);
     }
   }
 
@@ -226,39 +228,41 @@ export class GarageScene extends Phaser.Scene {
 
     // Telemetry Specs Box below turntable
     const specBox = this.add.graphics();
-    specBox.fillStyle(0x090f1e, 0.85);
-    specBox.fillRoundedRect(centerX - 240, centerY + 140, 480, 88, 6);
-    specBox.lineStyle(1, 0x1e293b, 0.8);
-    specBox.strokeRoundedRect(centerX - 240, centerY + 140, 480, 88, 6);
+    UIHelpers.drawGlassPanel(specBox, centerX - 240, centerY + 140, 480, 88, {
+      borderColor: 0x1e293b,
+      borderAlpha: 0.8,
+      fillColor: CYBER_THEME.BG_NAVY,
+      fillAlpha: 0.9,
+    });
 
     this.carTitleText = this.add.text(centerX - 220, centerY + 155, '', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '20px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '17px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
 
     this.carClassText = this.add.text(centerX + 220, centerY + 158, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
     }).setOrigin(1, 0);
 
     this.engineText = this.add.text(centerX - 220, centerY + 185, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
     });
 
     this.drivetrainText = this.add.text(centerX - 220, centerY + 203, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
     });
 
     this.weightText = this.add.text(centerX + 220, centerY + 195, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#cbd5e1',
       fontStyle: 'bold',
@@ -304,17 +308,17 @@ export class GarageScene extends Phaser.Scene {
     container.add(miniCar);
 
     // Car Name
-    const nameText = this.add.text(-w / 2 + 85, -12, car.name, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '18px',
+    const nameText = this.add.text(-w / 2 + 85, -12, car.name.toUpperCase(), {
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '15px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
     container.add(nameText);
 
     // Class & Tagline
-    const classText = this.add.text(-w / 2 + 85, 10, `${car.class} • ${car.tagline}`, {
-      fontFamily: 'monospace',
+    const classText = this.add.text(-w / 2 + 85, 10, `${car.class} // ${car.tagline}`, {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
     });
@@ -322,7 +326,7 @@ export class GarageScene extends Phaser.Scene {
 
     // Top Speed Tag on Right
     const speedTag = this.add.text(w / 2 - 20, 0, `SPEED: ${car.stats.topSpeed}`, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
@@ -339,18 +343,18 @@ export class GarageScene extends Phaser.Scene {
 
     const render = (isHovered: boolean, isSelected: boolean) => {
       bg.clear();
-      const fillColor = isSelected ? 0x172554 : isHovered ? 0x111c30 : 0x090f1f;
-      const borderColor = isSelected ? car.primaryColor : isHovered ? 0x00f0ff : 0x1e293b;
-      const borderWidth = isSelected ? 2.5 : isHovered ? 2 : 1;
+      const fillColor = isSelected ? 0x0f2444 : isHovered ? 0x0e1b33 : CYBER_THEME.BG_GLASS;
+      const borderColor = isSelected ? CYBER_THEME.CYAN : isHovered ? CYBER_THEME.CYAN : 0x1e293b;
+      const borderWidth = isSelected ? 2.5 : isHovered ? 1.5 : 1;
 
       bg.fillStyle(fillColor, 0.9);
       bg.fillRoundedRect(-w / 2, -h / 2, w, h, 6);
-      bg.lineStyle(borderWidth, borderColor, isSelected || isHovered ? 1 : 0.6);
+      bg.lineStyle(borderWidth, borderColor, isSelected ? 1 : isHovered ? 0.9 : 0.6);
       bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 6);
 
       if (isSelected) {
-        // Glowing corner tick
-        bg.fillStyle(car.primaryColor, 1);
+        // Glowing Neon Purple corner ticks
+        bg.fillStyle(CYBER_THEME.PURPLE, 1);
         bg.fillRect(-w / 2, -h / 2, 8, 3);
         bg.fillRect(-w / 2, -h / 2, 3, 8);
         bg.fillRect(w / 2 - 8, h / 2 - 3, 8, 3);
@@ -388,29 +392,33 @@ export class GarageScene extends Phaser.Scene {
     const panelH = 230;
 
     const panelBg = this.add.graphics();
-    panelBg.fillStyle(0x0a1020, 0.9);
-    panelBg.fillRoundedRect(x, y, panelW, panelH, 8);
-    panelBg.lineStyle(1.5, 0x1e293b, 0.8);
-    panelBg.strokeRoundedRect(x, y, panelW, panelH, 8);
+    UIHelpers.drawGlassPanel(panelBg, x, y, panelW, panelH, {
+      borderColor: 0x1e293b,
+      borderAlpha: 0.8,
+      fillColor: CYBER_THEME.BG_NAVY,
+      fillAlpha: 0.9,
+      headerHeight: 38,
+      headerColor: CYBER_THEME.CYAN,
+    });
 
-    this.add.text(x + 20, y + 16, 'TELEMETRY PROFILE & DYNAMICS', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '16px',
+    this.add.text(x + 20, y + 14, 'TELEMETRY PROFILE & DYNAMICS', {
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '14px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
 
     // Description text
-    this.carDescText = this.add.text(x + 20, y + 42, '', {
-      fontFamily: '"Segoe UI", Roboto, sans-serif',
-      fontSize: '12px',
+    this.carDescText = this.add.text(x + 20, y + 48, '', {
+      fontFamily: CYBER_THEME.FONT_BODY,
+      fontSize: '13px',
       color: '#94a3b8',
       wordWrap: { width: panelW - 40 },
       lineSpacing: 2,
     });
 
     // Stat Bars Container (Dynamic recreation on car switch)
-    this.statBarsContainer = this.add.container(x + 20, y + 92);
+    this.statBarsContainer = this.add.container(x + 20, y + 96);
   }
 
   /**
@@ -429,7 +437,7 @@ export class GarageScene extends Phaser.Scene {
 
     const particleTexture = car.id === 'viper-r'
       ? 'particle_green'
-      : car.id === 'rally-apex' ? 'particle_blue' : 'particle_orange';
+      : car.id === 'rally-apex' ? 'particle_blue' : 'particle_cyan';
 
     this.exhaustLeft = this.add.particles(this.carSprite.x - 13, this.carSprite.y + 64, particleTexture, {
       speedY: { min: 40, max: 120 },
@@ -452,23 +460,23 @@ export class GarageScene extends Phaser.Scene {
     this.turntableContainer.add([this.exhaustLeft, this.exhaustRight]);
 
     // 2. Update Spec Labels
-    this.carTitleText.setText(car.name);
+    this.carTitleText.setText(car.name.toUpperCase());
     this.carClassText.setText(car.class);
     this.engineText.setText(`ENGINE: ${car.engine}`);
     this.drivetrainText.setText(`DRIVETRAIN: ${car.drivetrain}`);
     this.weightText.setText(`WEIGHT: ${car.weight}`);
     this.carDescText.setText(car.description);
 
-    // 3. Rebuild Stat Bars
+    // 3. Rebuild Stat Bars (Electric Cyan, Neon Purple, Neon Emerald)
     this.statBarsContainer.removeAll(true);
     const barWidth = 470;
     const statSpacing = 32;
 
     const stats = [
-      { label: 'TOP SPEED', value: car.stats.topSpeed, color: 0x00f0ff },
-      { label: 'ACCELERATION', value: car.stats.acceleration, color: 0xff5500 },
-      { label: 'HANDLING / GRIP', value: car.stats.handling, color: 0x10b981 },
-      { label: 'NITRO CAPACITY', value: car.stats.nitro, color: 0xef4444 },
+      { label: 'TOP SPEED', value: car.stats.topSpeed, color: CYBER_THEME.CYAN },
+      { label: 'ACCELERATION', value: car.stats.acceleration, color: CYBER_THEME.PURPLE },
+      { label: 'HANDLING / GRIP', value: car.stats.handling, color: CYBER_THEME.EMERALD },
+      { label: 'NITRO CAPACITY', value: car.stats.nitro, color: CYBER_THEME.CYAN },
     ];
 
     stats.forEach((stat, idx) => {
@@ -520,8 +528,7 @@ export class GarageScene extends Phaser.Scene {
       width: 270,
       height: 48,
       label: continueLabel,
-      isPrimary: true,
-      accentColor: 0xff5500,
+      variant: 'primary',
       onClick: () => this.handleContinue(),
     });
   }
@@ -569,7 +576,7 @@ export class GarageScene extends Phaser.Scene {
 
     // Backdrop Dimmer
     const backdrop = this.add.graphics();
-    backdrop.fillStyle(0x000000, 0.75);
+    backdrop.fillStyle(0x000000, 0.85);
     backdrop.fillRect(-width / 2, -height / 2, width, height);
     backdrop.setInteractive(
       new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
@@ -581,19 +588,19 @@ export class GarageScene extends Phaser.Scene {
     const modalW = 560;
     const modalH = 340;
     const frame = this.add.graphics();
-    frame.fillStyle(0x0a1020, 0.98);
+    frame.fillStyle(CYBER_THEME.BG_NAVY, 0.98);
     frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
-    frame.lineStyle(2, 0xff5500, 0.9);
+    frame.lineStyle(2, CYBER_THEME.CYAN, 0.95);
     frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
 
     // Header bar
-    frame.fillStyle(0xff5500, 0.15);
+    frame.fillStyle(CYBER_THEME.PURPLE, 0.25);
     frame.fillRoundedRect(-modalW / 2 + 2, -modalH / 2 + 2, modalW - 4, 46, { tl: 10, tr: 10, bl: 0, br: 0 });
     this.modalContainer.add(frame);
 
     const title = this.add.text(0, -modalH / 2 + 23, 'RACE CONFIGURATION LOCKED', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
       color: '#ffffff',
       letterSpacing: 2,
     }).setOrigin(0.5);
@@ -605,13 +612,13 @@ export class GarageScene extends Phaser.Scene {
       `MACHINE: ${this.selectedCar.name} [${this.selectedCar.class}]`,
       `DIFFICULTY: ${this.stateData.selectedDifficulty}`,
       `ENGINE SETUP: ${this.selectedCar.engine}`,
-      'CIRCUIT STATUS: Grid clear • Starting lights ready • Launch sequence prepared.',
+      'CIRCUIT STATUS: Grid clear // Starting lights ready // Launch sequence prepared.',
     ];
 
     lines.forEach((line, index) => {
       const lineText = this.add.text(0, -modalH / 2 + 75 + index * 30, line, {
-        fontFamily: index === lines.length - 1 ? 'monospace' : '"Segoe UI", Roboto, sans-serif',
-        fontSize: index === lines.length - 1 ? '11px' : '13px',
+        fontFamily: index === lines.length - 1 ? CYBER_THEME.FONT_MONO : CYBER_THEME.FONT_BODY,
+        fontSize: index === lines.length - 1 ? '11px' : '14px',
         color: index === lines.length - 1 ? '#00f0ff' : '#e2e8f0',
         align: 'center',
         fontStyle: index < 3 ? 'bold' : 'normal',
@@ -619,7 +626,7 @@ export class GarageScene extends Phaser.Scene {
       this.modalContainer?.add(lineText);
     });
 
-    // Start Race Primary Button
+    // Start Race Primary Button (Electric Cyan)
     const startRaceBtn = UIHelpers.createCyberButton({
       scene: this,
       x: modalW / 4 - 15,
@@ -627,8 +634,7 @@ export class GarageScene extends Phaser.Scene {
       width: 230,
       height: 44,
       label: 'START RACE ►',
-      isPrimary: true,
-      accentColor: 0xff5500,
+      variant: 'primary',
       onClick: () => {
         this.closeModal();
         this.launchRaceScene();
@@ -645,7 +651,7 @@ export class GarageScene extends Phaser.Scene {
       height: 44,
       label: 'MODIFY SETUP',
       icon: '✕',
-      isPrimary: false,
+      variant: 'secondary',
       onClick: () => this.closeModal(),
     });
     this.modalContainer.add(returnBtn);
@@ -668,7 +674,7 @@ export class GarageScene extends Phaser.Scene {
    */
   public launchRaceScene(): void {
     SoundEffects.playNitroLaunch();
-    this.cameras.main.flash(200, 255, 80, 0);
+    this.cameras.main.flash(200, 0, 243, 255);
     this.cameras.main.fadeOut(300, 7, 10, 20);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.start('RaceScene');
@@ -701,17 +707,17 @@ export class GarageScene extends Phaser.Scene {
     const { height } = this.scale;
     const dt = delta / 1000;
 
-    // Animate Turntable Perimeter Ring
+    // Animate Turntable Perimeter Ring (Concentric Purple & Cyan)
     if (this.turntableRing) {
       this.turntableAngle = (this.turntableAngle + dt * 1.5) % (Math.PI * 2);
       this.turntableRing.clear();
 
-      // Outer ellipse
-      this.turntableRing.lineStyle(2, this.selectedCar.primaryColor, 0.7);
+      // Outer ellipse (Neon Purple)
+      this.turntableRing.lineStyle(2, CYBER_THEME.PURPLE, 0.7);
       this.turntableRing.strokeEllipse(0, 0, 240, 110);
 
-      // Inner ellipse
-      this.turntableRing.lineStyle(1, 0x00f0ff, 0.5);
+      // Inner ellipse (Electric Cyan)
+      this.turntableRing.lineStyle(1, CYBER_THEME.CYAN, 0.5);
       this.turntableRing.strokeEllipse(0, 0, 180, 80);
 
       // Rotating tick marks
@@ -720,7 +726,7 @@ export class GarageScene extends Phaser.Scene {
         const angle = (t / tickCount) * Math.PI * 2 + this.turntableAngle;
         const tx = Math.cos(angle) * 120;
         const ty = Math.sin(angle) * 55;
-        this.turntableRing.fillStyle(t % 2 === 0 ? this.selectedCar.primaryColor : 0x00f0ff, 0.85);
+        this.turntableRing.fillStyle(t % 2 === 0 ? CYBER_THEME.PURPLE : CYBER_THEME.CYAN, 0.85);
         this.turntableRing.fillCircle(tx, ty, 2.5);
       }
     }

@@ -12,6 +12,7 @@
 import Phaser from 'phaser';
 import type { CircuitTrack } from '../game/CircuitTrack';
 import { formatLapTime } from '../game/RaceManager';
+import { CYBER_THEME } from '../utils/UIHelpers';
 
 export interface CompetitorHUDItem {
   id: string;
@@ -78,14 +79,17 @@ export class MultiplayerHUDAdapter {
 
     this.leaderboardContainer = scene.add.container(lbX, lbY);
     const lbBg = scene.add.graphics();
-    lbBg.fillStyle(0x0a1020, 0.88);
+    lbBg.fillStyle(CYBER_THEME.BG_GLASS, 0.92);
     lbBg.fillRoundedRect(0, 0, lbW, lbH, 6);
-    lbBg.lineStyle(1.5, 0x00f0ff, 0.5);
+    lbBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.6);
     lbBg.strokeRoundedRect(0, 0, lbW, lbH, 6);
+    // Purple accent top strip
+    lbBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    lbBg.lineBetween(0, 0, 36, 0);
     this.leaderboardContainer.add(lbBg);
 
     const lbTitle = scene.add.text(12, 8, 'LIVE STANDINGS', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
       fontStyle: 'bold',
@@ -93,9 +97,9 @@ export class MultiplayerHUDAdapter {
     });
 
     this.playerPosBadgeText = scene.add.text(lbW - 12, 6, 'POS: 1 / 8', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '15px',
-      color: '#ffaa00',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '14px',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 1,
     }).setOrigin(1, 0);
 
@@ -111,22 +115,22 @@ export class MultiplayerHUDAdapter {
       this.leaderboardContainer.add(rowBg);
 
       const posText = scene.add.text(12, ry + 2, `${r + 1}`, {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '12px',
+        fontFamily: CYBER_THEME.FONT_DISPLAY,
+        fontSize: '11px',
         color: '#94a3b8',
       });
 
       const nameText = scene.add.text(32, ry + 3, '---', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
         color: '#ffffff',
         fontStyle: 'bold',
       });
 
       const lapText = scene.add.text(lbW - 12, ry + 3, '', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '9px',
-        color: '#00f0ff',
+        color: CYBER_THEME.CYAN_HEX,
       }).setOrigin(1, 0);
 
       this.leaderboardContainer.add([posText, nameText, lapText]);
@@ -142,37 +146,40 @@ export class MultiplayerHUDAdapter {
 
     const telemetryPanel = scene.add.container(panelX, panelY);
     const telBg = scene.add.graphics();
-    telBg.fillStyle(0x0a1020, 0.92);
+    telBg.fillStyle(CYBER_THEME.BG_NAVY, 0.94);
     telBg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 6);
-    telBg.lineStyle(1.5, 0x00f0ff, 0.6);
+    telBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.65);
     telBg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 6);
+    // Purple accent scanner strip
+    telBg.lineStyle(2, CYBER_THEME.PURPLE, 0.85);
+    telBg.lineBetween(-panelW / 4, -panelH / 2, panelW / 4, -panelH / 2);
     telemetryPanel.add(telBg);
 
     this.lapCounterText = scene.add.text(-panelW / 2 + 16, -12, 'LAP 1 / 3', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
-      color: '#00f0ff',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '20px',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 1,
     });
 
     this.currentLapTimerText = scene.add.text(0, -10, 'TIME: 00:00.000', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '12px',
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
     this.totalRaceTimerText = scene.add.text(panelW / 2 - 16, -10, 'ONLINE (20Hz)', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#10b981',
+      color: CYBER_THEME.EMERALD_HEX,
       fontStyle: 'bold',
     }).setOrigin(1, 0);
 
     this.checkpointNoticeText = scene.add.text(0, 10, 'MULTIPLAYER // GRID AUTHORITATIVE', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '9px',
-      color: '#94a3b8',
+      color: CYBER_THEME.CYAN_HEX,
     }).setOrigin(0.5, 0);
 
     telemetryPanel.add([
@@ -188,47 +195,54 @@ export class MultiplayerHUDAdapter {
     const clusterY = height - 90;
 
     const clusterBg = scene.add.graphics();
-    clusterBg.fillStyle(0x0a1020, 0.92);
+    clusterBg.fillStyle(CYBER_THEME.BG_NAVY, 0.94);
     clusterBg.fillRoundedRect(clusterX - 25, clusterY - 25, 180, 105, 6);
-    clusterBg.lineStyle(1.5, 0x00f0ff, 0.6);
+    clusterBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.65);
     clusterBg.strokeRoundedRect(clusterX - 25, clusterY - 25, 180, 105, 6);
+    // Purple accent corner
+    clusterBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    clusterBg.lineBetween(clusterX + 155, clusterY - 17, clusterX + 155, clusterY - 25);
+    clusterBg.lineBetween(clusterX + 145, clusterY - 25, clusterX + 155, clusterY - 25);
     this.container.add(clusterBg);
 
     this.speedArcGraphics = scene.add.graphics();
     this.container.add(this.speedArcGraphics);
 
     this.speedNumberText = scene.add.text(clusterX + 50, clusterY + 10, '0', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '38px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '36px',
       color: '#ffffff',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const kmhLabel = scene.add.text(clusterX + 50, clusterY + 34, 'KM / H', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
       letterSpacing: 1.5,
     }).setOrigin(0.5);
 
     this.gearText = scene.add.text(clusterX - 5, clusterY + 10, 'N', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '20px',
-      color: '#00f0ff',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
+      color: CYBER_THEME.CYAN_HEX,
     }).setOrigin(0.5);
 
     this.container.add([this.speedNumberText, kmhLabel, this.gearText]);
 
     // Nitro Gauge Bar
     const nitroTrack = scene.add.graphics();
-    nitroTrack.fillStyle(0x0f172a, 1);
+    nitroTrack.fillStyle(CYBER_THEME.BG_DARK, 1);
     nitroTrack.fillRoundedRect(clusterX - 15, clusterY + 54, 150, 12, 2);
+    nitroTrack.lineStyle(1, 0x1e293b, 0.8);
+    nitroTrack.strokeRoundedRect(clusterX - 15, clusterY + 54, 150, 12, 2);
     this.container.add(nitroTrack);
 
     this.nitroFillGraphics = scene.add.graphics();
     this.container.add(this.nitroFillGraphics);
 
     this.nitroPercentText = scene.add.text(clusterX + 60, clusterY + 60, 'NITRO 100%', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '8px',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -240,12 +254,12 @@ export class MultiplayerHUDAdapter {
 
     // 5. Center Announcement Text
     this.announcementText = scene.add.text(width / 2, height / 2 - 20, '', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
-      fontSize: '76px',
-      color: '#ff3300',
-      stroke: '#050811',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '68px',
+      color: CYBER_THEME.PURPLE_HEX,
+      stroke: CYBER_THEME.BG_DARK_HEX,
       strokeThickness: 10,
-      fontStyle: 'italic',
+      fontStyle: 'bold',
       letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);
     this.container.add(this.announcementText);
@@ -260,9 +274,9 @@ export class MultiplayerHUDAdapter {
     this.minimapContainer = this.scene.add.container(mapX, mapY);
 
     const mapBg = this.scene.add.graphics();
-    mapBg.fillStyle(0x0a1020, 0.85);
+    mapBg.fillStyle(CYBER_THEME.BG_NAVY, 0.88);
     mapBg.fillRoundedRect(0, 0, mapW, mapH, 6);
-    mapBg.lineStyle(1, 0x1e293b, 0.8);
+    mapBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.5);
     mapBg.strokeRoundedRect(0, 0, mapW, mapH, 6);
     this.minimapContainer.add(mapBg);
 
@@ -276,7 +290,7 @@ export class MultiplayerHUDAdapter {
     this.minimapOffsetY = margin + (availH - track.worldHeight * this.minimapScale) / 2;
 
     const trackLine = this.scene.add.graphics();
-    trackLine.lineStyle(2, 0x00f0ff, 0.45);
+    trackLine.lineStyle(2, CYBER_THEME.CYAN, 0.65);
     trackLine.beginPath();
 
     const pts = track.spacedPoints;
@@ -340,7 +354,7 @@ export class MultiplayerHUDAdapter {
     const nitroRatio = Math.max(0, Math.min(1, nitro / 100));
 
     this.nitroFillGraphics.clear();
-    this.nitroFillGraphics.fillStyle(0x00f0ff, 0.95);
+    this.nitroFillGraphics.fillStyle(CYBER_THEME.CYAN, 0.95);
     this.nitroFillGraphics.fillRoundedRect(clusterX - 15, clusterY + 54, 150 * nitroRatio, 12, 2);
     this.nitroPercentText.setText(`NITRO ${Math.round(nitro)}%`);
   }
@@ -359,6 +373,7 @@ export class MultiplayerHUDAdapter {
     const localCompetitor = sorted.find((c) => c.id === localPlayerId);
     if (localCompetitor) {
       this.playerPosBadgeText.setText(`POS: ${localCompetitor.pos} / ${totalRacers}`);
+      this.playerPosBadgeText.setColor(CYBER_THEME.CYAN_HEX);
       this.lapCounterText.setText(`LAP ${localCompetitor.lap} / 3`);
     }
 
@@ -370,21 +385,23 @@ export class MultiplayerHUDAdapter {
 
         row.bg.clear();
         if (isLocal) {
-          row.bg.fillStyle(0x00f0ff, 0.22);
+          row.bg.fillStyle(0x0f2444, 0.92);
           row.bg.fillRoundedRect(4, 28 + i * 21, 212, 19, 3);
+          row.bg.lineStyle(1.5, CYBER_THEME.CYAN, 0.9);
+          row.bg.strokeRoundedRect(4, 28 + i * 21, 212, 19, 3);
         }
 
-        row.posText.setText(String(c.pos)).setColor(isLocal ? '#00f0ff' : '#94a3b8');
-        row.nameText.setText(`[${c.slot}] ${c.name}`).setColor(isLocal ? '#ffffff' : '#cbd5e1');
+        row.posText.setText(String(c.pos)).setColor(isLocal ? CYBER_THEME.CYAN_HEX : '#94a3b8');
+        row.nameText.setText(`[${c.slot}] ${c.name}`).setColor(isLocal ? CYBER_THEME.CYAN_HEX : '#cbd5e1');
 
         if (c.status === 'FINISHED') {
-          row.lapText.setText('FIN').setColor('#10b981');
+          row.lapText.setText('FIN').setColor(CYBER_THEME.EMERALD_HEX);
         } else if (c.status === 'DNF') {
-          row.lapText.setText('DNF').setColor('#ef4444');
+          row.lapText.setText('DNF').setColor(CYBER_THEME.CRIMSON_HEX);
         } else if (c.status === 'DISCONNECTED') {
-          row.lapText.setText('DISC').setColor('#f59e0b');
+          row.lapText.setText('DISC').setColor(CYBER_THEME.AMBER_HEX);
         } else {
-          row.lapText.setText(`L${c.lap}`).setColor('#00f0ff');
+          row.lapText.setText(`L${c.lap}`).setColor(CYBER_THEME.CYAN_HEX);
         }
       } else {
         row.bg.clear();
@@ -409,30 +426,30 @@ export class MultiplayerHUDAdapter {
     for (const remote of remotePositions) {
       const mx = this.minimapOffsetX + remote.x * this.minimapScale;
       const my = this.minimapOffsetY + remote.y * this.minimapScale;
-      this.minimapPipsGraphics.fillStyle(remote.color || 0xf59e0b, 0.95);
+      this.minimapPipsGraphics.fillStyle(remote.color || CYBER_THEME.PURPLE, 0.95);
       this.minimapPipsGraphics.fillCircle(mx, my, 3.5);
     }
 
-    // Local player pip (radius 4.5, neon cyan/gold)
+    // Local player pip (radius 4.5, neon cyan with white core)
     const lx = this.minimapOffsetX + localX * this.minimapScale;
     const ly = this.minimapOffsetY + localY * this.minimapScale;
-    this.minimapPipsGraphics.fillStyle(0x00f0ff, 1);
+    this.minimapPipsGraphics.fillStyle(CYBER_THEME.CYAN, 1);
     this.minimapPipsGraphics.fillCircle(lx, ly, 4.5);
     this.minimapPipsGraphics.lineStyle(1.5, 0xffffff, 1);
     this.minimapPipsGraphics.strokeCircle(lx, ly, 4.5);
   }
 
   public showCheckpointFlash(cpIndex: number): void {
-    this.checkpointNoticeText.setText(`CHECKPOINT ${cpIndex + 1} // CLEARED`).setColor('#10b981');
+    this.checkpointNoticeText.setText(`CHECKPOINT ${cpIndex + 1} // CLEARED`).setColor(CYBER_THEME.EMERALD_HEX);
     this.scene.time.delayedCall(1200, () => {
-      this.checkpointNoticeText.setText('MULTIPLAYER // GRID AUTHORITATIVE').setColor('#94a3b8');
+      this.checkpointNoticeText.setText('MULTIPLAYER // GRID AUTHORITATIVE').setColor(CYBER_THEME.CYAN_HEX);
     });
   }
 
   public showFinishBanner(position: number, totalRacers: number): void {
     const isFirst = position === 1;
     const banner = isFirst ? '🏁 VICTORY! 1ST PLACE 🏁' : `🏁 FINISHED! POS: ${position} / ${totalRacers} 🏁`;
-    this.announcementText.setText(banner).setColor(isFirst ? '#ffaa00' : '#10b981').setAlpha(1).setScale(0.8);
+    this.announcementText.setText(banner).setColor(isFirst ? CYBER_THEME.CYAN_HEX : CYBER_THEME.EMERALD_HEX).setAlpha(1).setScale(0.8);
 
     this.scene.tweens.add({
       targets: this.announcementText,

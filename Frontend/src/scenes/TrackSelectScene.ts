@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TRACKS, type TrackConfig, type CircuitPoint } from '../data/TrackData';
 import { DIFFICULTIES, type DifficultyId, selectionState } from '../state/SelectionState';
-import { UIHelpers } from '../utils/UIHelpers';
+import { UIHelpers, CYBER_THEME } from '../utils/UIHelpers';
 import { SoundEffects } from '../utils/SoundEffects';
 
 export class TrackSelectScene extends Phaser.Scene {
@@ -73,6 +73,11 @@ export class TrackSelectScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => {
       this.handleBack();
     });
+
+    // ENTER proceeds to vehicle selection
+    this.input.keyboard?.on('keydown-ENTER', () => {
+      this.handleContinue();
+    });
   }
 
   /**
@@ -80,25 +85,36 @@ export class TrackSelectScene extends Phaser.Scene {
    */
   private createAtmosphere(width: number, height: number): void {
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x060812, 0x060812, 0x0c1122, 0x080c1a, 1);
+    bg.fillGradientStyle(CYBER_THEME.BG_DARK, CYBER_THEME.BG_DARK, 0x0c1426, 0x070b16, 1);
     bg.fillRect(0, 0, width, height);
 
-    // Ambient Glowing Orbs
-    const orangeGlow = this.add.sprite(width * 0.1, height * 0.9, 'glow_orb')
-      .setScale(3)
+    // Subtle neon grid lines
+    bg.lineStyle(1, CYBER_THEME.CYAN, 0.04);
+    const gridSize = 40;
+    for (let x = 0; x <= width; x += gridSize) {
+      bg.lineBetween(x, 0, x, height);
+    }
+    for (let y = 0; y <= height; y += gridSize) {
+      bg.lineBetween(0, y, width, y);
+    }
+
+    // Ambient Glowing Orbs (Electric Cyan & Neon Purple)
+    const purpleGlow = this.add.sprite(width * 0.1, height * 0.85, 'glow_orb')
+      .setTint(CYBER_THEME.PURPLE)
+      .setScale(3.2)
       .setAlpha(0.2)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    const blueGlow = this.add.sprite(width * 0.9, height * 0.1, 'glow_orb')
-      .setTint(0x00f0ff)
-      .setScale(3)
+    const cyanGlow = this.add.sprite(width * 0.9, height * 0.15, 'glow_orb')
+      .setTint(CYBER_THEME.CYAN)
+      .setScale(3.2)
       .setAlpha(0.18)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.tweens.add({
-      targets: [orangeGlow, blueGlow],
+      targets: [purpleGlow, cyanGlow],
       alpha: { from: 0.12, to: 0.25 },
-      scale: { from: 2.7, to: 3.3 },
+      scale: { from: 2.8, to: 3.4 },
       duration: 3500,
       yoyo: true,
       repeat: -1,
@@ -115,6 +131,7 @@ export class TrackSelectScene extends Phaser.Scene {
         .setAngle(90)
         .setScale(Phaser.Math.FloatBetween(0.4, 0.8), Phaser.Math.FloatBetween(0.8, 1.5))
         .setAlpha(Phaser.Math.FloatBetween(0.1, 0.35))
+        .setTint(i % 2 === 0 ? CYBER_THEME.CYAN : CYBER_THEME.PURPLE)
         .setBlendMode(Phaser.BlendModes.ADD);
       this.speedStreaks.push(streak);
     }
@@ -124,47 +141,13 @@ export class TrackSelectScene extends Phaser.Scene {
    * Top Header with Breadcrumbs & Back button
    */
   private createHeader(width: number): void {
-    // Back to Menu Button
-    UIHelpers.createCyberButton({
-      scene: this,
-      x: 120,
-      y: 45,
-      width: 160,
-      height: 38,
-      label: 'MAIN MENU',
-      icon: '◄',
-      isPrimary: false,
-      onClick: () => this.handleBack(),
-    });
-
-    // Screen Title & Subtitle
-    this.add.text(width / 2, 34, 'CIRCUIT SELECTION', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '28px',
-      color: '#ffffff',
-      letterSpacing: 2,
-    }).setOrigin(0.5);
-
-    this.add.text(width / 2, 60, '// SELECT YOUR RACING ENVIRONMENT & COMBAT DIFFICULTY //', {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#00f0ff',
-      letterSpacing: 1,
-    }).setOrigin(0.5);
-
-    // Progress Badge
-    const badge = this.add.graphics();
-    badge.fillStyle(0x00f0ff, 0.1);
-    badge.lineStyle(1, 0x00f0ff, 0.5);
-    badge.strokeRoundedRect(width - 220, 26, 170, 36, 4);
-    badge.fillRoundedRect(width - 220, 26, 170, 36, 4);
-
-    this.add.text(width - 135, 44, 'PHASE 1 : TRACK', {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#00f0ff',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    UIHelpers.createCyberHeader(
+      this,
+      width,
+      'CIRCUIT SELECTION',
+      'GLOBAL RACING CIRCUITS // TRACK SELECTION',
+      () => this.handleBack()
+    );
   }
 
   /**
@@ -208,9 +191,9 @@ export class TrackSelectScene extends Phaser.Scene {
     this.drawMiniCircuit(thumbG, track, w, h);
 
     // Track Name Label
-    const nameText = this.add.text(0, h / 2 - 20, track.name.toUpperCase(), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '13px',
+    const nameText = this.add.text(0, h / 2 - 22, track.name.toUpperCase(), {
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '11px',
       color: '#ffffff',
       letterSpacing: 1,
     }).setOrigin(0.5);
@@ -218,14 +201,15 @@ export class TrackSelectScene extends Phaser.Scene {
 
     // Difficulty Recommended Pill Tag
     const diffColor = track.recommendedDifficulty === 'EASY'
-      ? '#10b981'
-      : track.recommendedDifficulty === 'MEDIUM' ? '#ff5500' : '#ef4444';
+      ? '#00ff9d'
+      : track.recommendedDifficulty === 'MEDIUM' ? '#00f3ff' : '#ff0055';
 
-    const diffBadge = this.add.text(0, h / 2 - 6, `• ${track.recommendedDifficulty} •`, {
-      fontFamily: 'monospace',
+    const diffBadge = this.add.text(0, h / 2 - 8, track.recommendedDifficulty, {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '9px',
       color: diffColor,
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
     container.add(diffBadge);
 
@@ -239,18 +223,18 @@ export class TrackSelectScene extends Phaser.Scene {
 
     const renderCard = (isHovered: boolean, isSelected: boolean) => {
       bg.clear();
-      const fillColor = isSelected ? 0x172554 : isHovered ? 0x111c30 : 0x0a0f1d;
-      const borderColor = isSelected ? 0xff5500 : isHovered ? track.accentColor : 0x1e293b;
-      const borderWidth = isSelected ? 2.5 : isHovered ? 2 : 1;
+      const fillColor = isSelected ? 0x0f2444 : isHovered ? 0x0e1b33 : CYBER_THEME.BG_GLASS;
+      const borderColor = isSelected ? CYBER_THEME.CYAN : isHovered ? CYBER_THEME.CYAN : 0x1e293b;
+      const borderWidth = isSelected ? 2.5 : isHovered ? 1.5 : 1;
 
-      bg.fillStyle(fillColor, 0.85);
+      bg.fillStyle(fillColor, 0.9);
       bg.fillRoundedRect(-w / 2, -h / 2, w, h, 6);
-      bg.lineStyle(borderWidth, borderColor, isSelected || isHovered ? 1 : 0.6);
+      bg.lineStyle(borderWidth, borderColor, isSelected ? 1 : isHovered ? 0.9 : 0.6);
       bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 6);
 
       if (isSelected) {
-        // Glowing corner ticks
-        bg.fillStyle(0xff5500, 1);
+        // Glowing Neon Purple corner ticks
+        bg.fillStyle(CYBER_THEME.PURPLE, 1);
         bg.fillRect(-w / 2, -h / 2, 8, 3);
         bg.fillRect(-w / 2, -h / 2, 3, 8);
         bg.fillRect(w / 2 - 8, h / 2 - 3, 8, 3);
@@ -266,8 +250,8 @@ export class TrackSelectScene extends Phaser.Scene {
       renderCard(true, track.id === this.selectedTrack.id);
       this.tweens.add({
         targets: container,
-        scaleX: 1.04,
-        scaleY: 1.04,
+        scaleX: 1.03,
+        scaleY: 1.03,
         duration: 120,
         ease: 'Quad.easeOut',
       });
@@ -330,44 +314,49 @@ export class TrackSelectScene extends Phaser.Scene {
     const panelH = 300;
 
     const panelBg = this.add.graphics();
-    panelBg.fillStyle(0x0a1020, 0.9);
-    panelBg.fillRoundedRect(x, y, panelW, panelH, 8);
-    panelBg.lineStyle(1.5, 0x00f0ff, 0.4);
-    panelBg.strokeRoundedRect(x, y, panelW, panelH, 8);
+    UIHelpers.drawGlassPanel(panelBg, x, y, panelW, panelH, {
+      borderColor: CYBER_THEME.CYAN,
+      borderAlpha: 0.8,
+      fillColor: CYBER_THEME.BG_NAVY,
+      fillAlpha: 0.92,
+      headerHeight: 46,
+      headerColor: CYBER_THEME.PURPLE,
+    });
 
     // Procedural Circuit Display Graphics Canvas
     this.previewGraphics = this.add.graphics();
     this.previewCircuitGraphics = this.add.graphics();
 
     // Animated beacon dot on the circuit
-    this.circuitBeacon = this.add.circle(0, 0, 4, 0xffffff);
+    this.circuitBeacon = this.add.circle(0, 0, 4, CYBER_THEME.CYAN);
     this.circuitBeacon.setBlendMode(Phaser.BlendModes.ADD);
 
     // Inspector Text Elements
-    this.trackTitleText = this.add.text(x + 24, y + 20, '', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '26px',
+    this.trackTitleText = this.add.text(x + 24, y + 14, '', {
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '20px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
 
-    this.trackTaglineText = this.add.text(x + 24, y + 54, '', {
-      fontFamily: 'monospace',
+    this.trackTaglineText = this.add.text(x + 24, y + 56, '', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
       letterSpacing: 1,
     });
 
-    this.trackDifficultyBadge = this.add.text(x + panelW - 24, y + 24, '', {
-      fontFamily: 'monospace',
+    this.trackDifficultyBadge = this.add.text(x + panelW - 24, y + 18, '', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#ffffff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(1, 0);
 
     this.trackDescText = this.add.text(x + 24, y + 215, '', {
-      fontFamily: '"Segoe UI", Roboto, sans-serif',
+      fontFamily: CYBER_THEME.FONT_BODY,
       fontSize: '13px',
       color: '#cbd5e1',
       wordWrap: { width: panelW - 48 },
@@ -375,7 +364,7 @@ export class TrackSelectScene extends Phaser.Scene {
     });
 
     this.trackStatsText = this.add.text(x + 24, y + 270, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       fontStyle: 'bold',
@@ -397,12 +386,12 @@ export class TrackSelectScene extends Phaser.Scene {
     this.trackTaglineText.setText(`// ${track.tagline} //`);
     this.trackDescText.setText(track.description);
     this.trackStatsText.setText(
-      `LENGTH: ${track.length}  •  LAPS: ${track.laps}  •  SURFACE: ${track.surface.toUpperCase()}`
+      `LENGTH: ${track.length}  |  LAPS: ${track.laps}  |  SURFACE: ${track.surface.toUpperCase()}`
     );
 
     const diffColor = track.recommendedDifficulty === 'EASY'
-      ? '#10b981'
-      : track.recommendedDifficulty === 'MEDIUM' ? '#ff5500' : '#ef4444';
+      ? '#00ff9d'
+      : track.recommendedDifficulty === 'MEDIUM' ? '#00f3ff' : '#ff0055';
     this.trackDifficultyBadge.setText(`RECOMMENDED: ${track.recommendedDifficulty}`);
     this.trackDifficultyBadge.setColor(diffColor);
 
@@ -625,14 +614,18 @@ export class TrackSelectScene extends Phaser.Scene {
 
     // Background Frame
     const panelBg = this.add.graphics();
-    panelBg.fillStyle(0x0a1020, 0.9);
-    panelBg.fillRoundedRect(x, y, panelW, panelH, 8);
-    panelBg.lineStyle(1.5, 0x334155, 0.6);
-    panelBg.strokeRoundedRect(x, y, panelW, panelH, 8);
+    UIHelpers.drawGlassPanel(panelBg, x, y, panelW, panelH, {
+      borderColor: 0x1e293b,
+      borderAlpha: 0.8,
+      fillColor: CYBER_THEME.BG_NAVY,
+      fillAlpha: 0.92,
+      headerHeight: 40,
+      headerColor: CYBER_THEME.CYAN,
+    });
 
-    this.add.text(x + 24, y + 16, 'RACE DIFFICULTY MODIFIER', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '17px',
+    this.add.text(x + 24, y + 14, 'RACE DIFFICULTY MODIFIER', {
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '14px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
@@ -660,7 +653,7 @@ export class TrackSelectScene extends Phaser.Scene {
     infoBg.strokeRoundedRect(x + 24, y + 86, panelW - 48, 84, 6);
 
     this.diffTaglineText = this.add.text(x + 36, y + 96, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
@@ -668,15 +661,15 @@ export class TrackSelectScene extends Phaser.Scene {
     });
 
     this.diffDescText = this.add.text(x + 36, y + 115, '', {
-      fontFamily: '"Segoe UI", Roboto, sans-serif',
-      fontSize: '11.5px',
+      fontFamily: CYBER_THEME.FONT_BODY,
+      fontSize: '12.5px',
       color: '#cbd5e1',
       wordWrap: { width: panelW - 72 },
       lineSpacing: 2,
     });
 
     this.diffStatsText = this.add.text(x + 36, y + 148, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
       fontStyle: 'bold',
@@ -699,8 +692,8 @@ export class TrackSelectScene extends Phaser.Scene {
 
     const diff = DIFFICULTIES[diffId];
     const text = this.add.text(0, 0, diff.id, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '16px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '13px',
       color: '#ffffff',
       letterSpacing: 1.5,
     }).setOrigin(0.5);
@@ -715,15 +708,26 @@ export class TrackSelectScene extends Phaser.Scene {
 
     const render = (isHovered: boolean, isSelected: boolean) => {
       bg.clear();
-      const fillColor = isSelected ? diff.color : isHovered ? 0x1e293b : 0x0f172a;
-      const fillAlpha = isSelected ? 0.85 : 0.7;
-      const borderColor = isSelected ? 0xffffff : isHovered ? diff.color : 0x334155;
-      const borderWidth = isSelected ? 2.5 : 1.5;
+      const accent = diffId === 'EASY'
+        ? CYBER_THEME.EMERALD
+        : diffId === 'MEDIUM' ? CYBER_THEME.CYAN : CYBER_THEME.PURPLE;
+      const fillColor = isSelected ? 0x0f2444 : isHovered ? 0x0e1b33 : CYBER_THEME.BG_GLASS;
+      const fillAlpha = isSelected ? 0.95 : 0.8;
+      const borderColor = isSelected ? accent : isHovered ? CYBER_THEME.CYAN : 0x1e293b;
+      const borderWidth = isSelected ? 2.5 : isHovered ? 1.5 : 1;
 
       bg.fillStyle(fillColor, fillAlpha);
       bg.fillRoundedRect(-w / 2, -h / 2, w, h, 6);
       bg.lineStyle(borderWidth, borderColor, 1);
       bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 6);
+
+      if (isSelected) {
+        bg.fillStyle(accent, 1);
+        bg.fillRect(-w / 2, -h / 2, 6, 2);
+        bg.fillRect(-w / 2, -h / 2, 2, 6);
+        bg.fillRect(w / 2 - 6, h / 2 - 2, 6, 2);
+        bg.fillRect(w / 2 - 2, h / 2 - 6, 2, 6);
+      }
 
       text.setColor(isSelected ? '#ffffff' : isHovered ? '#00f0ff' : '#94a3b8');
     };
@@ -757,7 +761,7 @@ export class TrackSelectScene extends Phaser.Scene {
     const diff = DIFFICULTIES[this.selectedDifficulty];
     this.diffTaglineText.setText(`// ${diff.name} — ${diff.tagline} //`);
     this.diffDescText.setText(diff.description);
-    this.diffStatsText.setText(`AI BEHAVIOR: ${diff.aiAggression}   •   NITRO TUNING: ${diff.nitroBonus}`);
+    this.diffStatsText.setText(`AI BEHAVIOR: ${diff.aiAggression}   |   NITRO TUNING: ${diff.nitroBonus}`);
 
     this.difficultyButtons.forEach((btn, id) => {
       const render = btn.getData('render');
@@ -801,16 +805,15 @@ export class TrackSelectScene extends Phaser.Scene {
   private createFooter(width: number, height: number): void {
     const footerY = height - 42;
 
-    // Continue to Garage Button (Primary)
+    // Continue to Garage Button (Primary Electric Cyan)
     UIHelpers.createCyberButton({
       scene: this,
-      x: width - 180,
+      x: width - 170,
       y: footerY,
       width: 250,
       height: 48,
-      label: 'SELECT CAR ►',
-      isPrimary: true,
-      accentColor: 0xff5500,
+      label: 'SELECT VEHICLE ►',
+      variant: 'primary',
       onClick: () => this.handleContinue(),
     });
   }

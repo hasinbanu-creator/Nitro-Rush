@@ -4,7 +4,7 @@ import { TRACKS, type TrackConfig } from '../data/TrackData';
 import { DIFFICULTIES, type DifficultyConfig, selectionState, type DifficultyId } from '../state/SelectionState';
 import { formatLapTime, type RaceResultData, type CompetitorResult } from '../game/RaceManager';
 import { SoundEffects } from '../utils/SoundEffects';
-import { UIHelpers } from '../utils/UIHelpers';
+import { UIHelpers, CYBER_THEME } from '../utils/UIHelpers';
 
 export class ResultsScene extends Phaser.Scene {
   public resultData!: RaceResultData;
@@ -172,20 +172,20 @@ export class ResultsScene extends Phaser.Scene {
   private createCyberBackground(width: number, height: number): void {
     const bg = this.add.graphics().setDepth(0);
     // 100% solid base background to ensure no underlying scene shows through
-    bg.fillStyle(0x070913, 1.0);
+    bg.fillStyle(CYBER_THEME.BG_DARK, 1.0);
     bg.fillRect(0, 0, width, height);
 
-    bg.fillGradientStyle(0x0c1426, 0x0c1426, 0x070913, 0x070913, 1);
+    bg.fillGradientStyle(CYBER_THEME.BG_GLASS, CYBER_THEME.BG_GLASS, CYBER_THEME.BG_DARK, CYBER_THEME.BG_DARK, 1);
     bg.fillRect(0, 0, width, height);
 
     // Subtle diagonal neon grid lines
-    bg.lineStyle(1, 0x00f0ff, 0.05);
+    bg.lineStyle(1, CYBER_THEME.CYAN, 0.06);
     for (let x = -height; x < width + height; x += 60) {
       bg.lineBetween(x, 0, x + height, height);
     }
 
     // Glowing particle embers floating upwards
-    this.starParticles = this.add.particles(0, 0, 'particle_ember', {
+    this.starParticles = this.add.particles(0, 0, 'particle_cyan', {
       x: { min: 0, max: width },
       y: { min: height - 40, max: height + 10 },
       speedY: { min: -25, max: -60 },
@@ -193,7 +193,7 @@ export class ResultsScene extends Phaser.Scene {
       scale: { start: 0.35, end: 0.05 },
       alpha: { start: 0.6, end: 0 },
       lifespan: 5000,
-      frequency: 180,
+      frequency: 220,
       blendMode: 'ADD',
     }).setDepth(1);
   }
@@ -210,43 +210,44 @@ export class ResultsScene extends Phaser.Scene {
 
     if (pos === 1) {
       posBanner = '★ 1ST PLACE — RACE WINNER! ★';
-      posColor = '#ffaa00';
+      posColor = CYBER_THEME.AMBER_HEX;
     } else if (pos === 2) {
       posBanner = '★ 2ND PLACE — PODIUM FINISH ★';
-      posColor = '#00f0ff';
+      posColor = CYBER_THEME.CYAN_HEX;
     } else if (pos === 3) {
       posBanner = '★ 3RD PLACE — PODIUM FINISH ★';
-      posColor = '#f97316';
+      posColor = CYBER_THEME.PURPLE_HEX;
     } else {
       posBanner = '// 4TH PLACE — GRID QUALIFIED //';
       posColor = '#cbd5e1';
     }
 
     const title = this.add.text(width / 2, 42, posBanner, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '34px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '28px',
       color: posColor,
       letterSpacing: 2,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const subtitle = this.add.text(width / 2, 76, '// OFFICIAL CIRCUIT TELEMETRY ARCHIVE //', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '12px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 2,
     }).setOrigin(0.5);
 
     // Status pill anchored cleanly on the right
     const statusBg = this.add.graphics();
-    statusBg.fillStyle(0x064e3b, 0.85);
+    statusBg.fillStyle(CYBER_THEME.BG_GLASS, 0.9);
     statusBg.fillRoundedRect(width - 264, 38, 224, 32, 6);
-    statusBg.lineStyle(1.5, 0x10b981, 0.9);
+    statusBg.lineStyle(1.5, CYBER_THEME.EMERALD, 0.9);
     statusBg.strokeRoundedRect(width - 264, 38, 224, 32, 6);
 
     const statusText = this.add.text(width - 152, 54, 'STATUS: FINISHED [3/3 LAPS]', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#34d399',
+      color: CYBER_THEME.EMERALD_HEX,
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -261,16 +262,19 @@ export class ResultsScene extends Phaser.Scene {
 
     // Card background frame
     const frame = this.add.graphics();
-    frame.fillStyle(0x0c1322, 0.92);
+    frame.fillStyle(CYBER_THEME.BG_GLASS, 0.94);
     frame.fillRoundedRect(0, 0, w, h, 8);
-    frame.lineStyle(1.5, 0x00f0ff, 0.5);
+    frame.lineStyle(1.5, CYBER_THEME.CYAN, 0.65);
     frame.strokeRoundedRect(0, 0, w, h, 8);
+    // Purple accent top strip
+    frame.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    frame.lineBetween(0, 0, 44, 0);
     container.add(frame);
 
     // Header label
     const cardTitle = this.add.text(20, 16, 'MACHINE & TRACK DOSSIER', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '16px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '14px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
@@ -281,11 +285,11 @@ export class ResultsScene extends Phaser.Scene {
     const pedY = 120;
     const ped = this.add.graphics();
 
-    ped.lineStyle(3, 0x00f0ff, 0.6);
+    ped.lineStyle(3, CYBER_THEME.CYAN, 0.7);
     ped.strokeCircle(pedX, pedY, 68);
-    ped.fillStyle(0x07111e, 0.9);
+    ped.fillStyle(CYBER_THEME.BG_NAVY, 0.9);
     ped.fillCircle(pedX, pedY, 65);
-    ped.lineStyle(1, 0xff5500, 0.8);
+    ped.lineStyle(1.5, CYBER_THEME.PURPLE, 0.85);
     ped.strokeCircle(pedX, pedY, 52);
     container.add(ped);
 
@@ -307,16 +311,16 @@ export class ResultsScene extends Phaser.Scene {
 
     // Machine Name & Class
     const carName = this.add.text(w / 2, 206, this.selectedCar.name, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '24px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '22px',
       color: '#ffffff',
       letterSpacing: 2,
     }).setOrigin(0.5);
 
     const carClass = this.add.text(w / 2, 232, this.selectedCar.class, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -325,23 +329,23 @@ export class ResultsScene extends Phaser.Scene {
     // Mini Performance Bars
     const statsY = 262;
     const stats = [
-      { label: 'TOP SPEED', val: this.selectedCar.stats.topSpeed, color: 0xff5500 },
-      { label: 'ACCEL', val: this.selectedCar.stats.acceleration, color: 0x00f0ff },
-      { label: 'HANDLING', val: this.selectedCar.stats.handling, color: 0x10b981 },
-      { label: 'NITRO', val: this.selectedCar.stats.nitro, color: 0xa855f7 },
+      { label: 'TOP SPEED', val: this.selectedCar.stats.topSpeed, color: CYBER_THEME.CYAN },
+      { label: 'ACCEL', val: this.selectedCar.stats.acceleration, color: CYBER_THEME.PURPLE },
+      { label: 'HANDLING', val: this.selectedCar.stats.handling, color: CYBER_THEME.EMERALD },
+      { label: 'NITRO', val: this.selectedCar.stats.nitro, color: CYBER_THEME.CYAN },
     ];
 
     stats.forEach((st, idx) => {
       const sy = statsY + idx * 24;
       const lbl = this.add.text(26, sy, st.label, {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
         color: '#94a3b8',
         fontStyle: 'bold',
       });
 
       const barBg = this.add.graphics();
-      barBg.fillStyle(0x1e293b, 1);
+      barBg.fillStyle(CYBER_THEME.BG_DARK, 1);
       barBg.fillRoundedRect(110, sy + 3, w - 140, 8, 2);
 
       const barFill = this.add.graphics();
@@ -359,39 +363,39 @@ export class ResultsScene extends Phaser.Scene {
 
     // Selected Circuit Section
     const trackLabel = this.add.text(26, 382, 'CIRCUIT', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#64748b',
     });
 
     const trackName = this.add.text(26, 398, this.selectedTrack.name.toUpperCase(), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '20px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
       color: '#ffffff',
       letterSpacing: 1,
     });
 
     const trackEnv = this.add.text(26, 426, `ENVIRONMENT: ${this.selectedTrack.environment.toUpperCase()}`, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
     });
 
     const diffColor = this.selectedDifficulty.id === 'EASY'
-      ? '#10b981'
-      : this.selectedDifficulty.id === 'MEDIUM' ? '#f97316' : '#ef4444';
+      ? CYBER_THEME.EMERALD_HEX
+      : this.selectedDifficulty.id === 'MEDIUM' ? CYBER_THEME.CYAN_HEX : CYBER_THEME.CRIMSON_HEX;
 
     const diffBadge = this.add.text(w - 26, 400, `[${this.selectedDifficulty.id}]`, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '12px',
       color: diffColor,
       fontStyle: 'bold',
     }).setOrigin(1, 0);
 
     const diffDesc = this.add.text(26, 450, `TUNING: ${this.selectedDifficulty.description}`, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
     });
 
     container.add([trackLabel, trackName, trackEnv, diffBadge, diffDesc]);
@@ -405,10 +409,13 @@ export class ResultsScene extends Phaser.Scene {
 
     // Panel background frame
     const frame = this.add.graphics();
-    frame.fillStyle(0x0c1322, 0.92);
+    frame.fillStyle(CYBER_THEME.BG_GLASS, 0.94);
     frame.fillRoundedRect(0, 0, w, h, 8);
-    frame.lineStyle(1.5, 0x00f0ff, 0.5);
+    frame.lineStyle(1.5, CYBER_THEME.CYAN, 0.65);
     frame.strokeRoundedRect(0, 0, w, h, 8);
+    // Purple accent top strip
+    frame.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    frame.lineBetween(0, 0, 44, 0);
     container.add(frame);
 
     // 1. Two Hero Boxes at Top: YOUR TOTAL TIME & YOUR BEST LAP
@@ -416,55 +423,57 @@ export class ResultsScene extends Phaser.Scene {
 
     // TOTAL TIME BOX
     const totalBox = this.add.graphics();
-    totalBox.fillStyle(0x07111e, 0.95);
+    totalBox.fillStyle(CYBER_THEME.BG_NAVY, 0.95);
     totalBox.fillRoundedRect(24, 16, boxW, 85, 6);
-    totalBox.lineStyle(1.5, 0x00f0ff, 0.7);
+    totalBox.lineStyle(1.5, CYBER_THEME.CYAN, 0.8);
     totalBox.strokeRoundedRect(24, 16, boxW, 85, 6);
     container.add(totalBox);
 
     const totalLabel = this.add.text(40, 26, 'YOUR TOTAL RACE TIME', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       letterSpacing: 1.5,
     });
 
     const totalValue = this.add.text(40, 46, formatLapTime(this.resultData.totalTimeMs), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '36px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '32px',
       color: '#ffffff',
       letterSpacing: 2,
+      fontStyle: 'bold',
     });
     container.add([totalLabel, totalValue]);
 
     // BEST LAP BOX
     const bestX = 24 + boxW + 12;
     const bestBox = this.add.graphics();
-    bestBox.fillStyle(0x07111e, 0.95);
+    bestBox.fillStyle(CYBER_THEME.BG_NAVY, 0.95);
     bestBox.fillRoundedRect(bestX, 16, boxW, 85, 6);
-    bestBox.lineStyle(1.5, 0xff5500, 0.8);
+    bestBox.lineStyle(1.5, CYBER_THEME.PURPLE, 0.85);
     bestBox.strokeRoundedRect(bestX, 16, boxW, 85, 6);
     container.add(bestBox);
 
     const bestLabel = this.add.text(bestX + 16, 26, '★ YOUR BEST LAP RECORD', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#ff5500',
+      color: CYBER_THEME.PURPLE_HEX,
       letterSpacing: 1.5,
       fontStyle: 'bold',
     });
 
     const bestValue = this.add.text(bestX + 16, 46, formatLapTime(this.resultData.bestLapMs), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '36px',
-      color: '#ffaa00',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '32px',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 2,
+      fontStyle: 'bold',
     });
     container.add([bestLabel, bestValue]);
 
     // 2. Official 4-Car Classification Header
     const tableHeaderBg = this.add.graphics();
-    tableHeaderBg.fillStyle(0x131d33, 0.9);
+    tableHeaderBg.fillStyle(CYBER_THEME.BG_DARK, 0.95);
     tableHeaderBg.fillRoundedRect(24, 114, w - 48, 28, 4);
     container.add(tableHeaderBg);
 
@@ -475,31 +484,31 @@ export class ResultsScene extends Phaser.Scene {
     const colTotal = Math.floor(w * 0.75);
 
     const thPos = this.add.text(colPos, 121, 'POS', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
       fontStyle: 'bold',
     });
     const thDriver = this.add.text(colDriver, 121, 'DRIVER & MACHINE', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
       fontStyle: 'bold',
     });
     const thStatus = this.add.text(colStatus, 121, 'STATUS', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
       fontStyle: 'bold',
     });
     const thBest = this.add.text(colBest, 121, 'BEST LAP', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
       fontStyle: 'bold',
     });
     const thTotal = this.add.text(colTotal, 121, 'TOTAL TIME', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
       fontStyle: 'bold',
@@ -517,40 +526,41 @@ export class ResultsScene extends Phaser.Scene {
 
       const rowBg = this.add.graphics();
       if (isPlayer) {
-        rowBg.fillStyle(0x0e2f44, 0.92);
+        rowBg.fillStyle(0x0f2444, 0.95);
         rowBg.fillRoundedRect(24, rowY, w - 48, rowH, 4);
-        rowBg.lineStyle(1.5, 0x00f0ff, 0.9);
+        rowBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.9);
         rowBg.strokeRoundedRect(24, rowY, w - 48, rowH, 4);
       } else if (isWinner) {
-        rowBg.fillStyle(0x2d1a04, 0.9);
+        rowBg.fillStyle(0x1f1638, 0.9);
         rowBg.fillRoundedRect(24, rowY, w - 48, rowH, 4);
-        rowBg.lineStyle(1.5, 0xffaa00, 0.9);
+        rowBg.lineStyle(1.5, CYBER_THEME.PURPLE, 0.9);
         rowBg.strokeRoundedRect(24, rowY, w - 48, rowH, 4);
       } else {
-        rowBg.fillStyle(0x09101d, 0.85);
+        rowBg.fillStyle(CYBER_THEME.BG_NAVY, 0.85);
         rowBg.fillRoundedRect(24, rowY, w - 48, rowH, 4);
         rowBg.lineStyle(1, 0x1e293b, 0.6);
         rowBg.strokeRoundedRect(24, rowY, w - 48, rowH, 4);
       }
       container.add(rowBg);
 
-      // Pos badge (e.g. 1ST 🏆, 2ND, 3RD, 4TH)
+      // Pos badge (e.g. 1ST, 2ND, 3RD, 4TH)
       const posLabels = ['1ST', '2ND', '3RD', '4TH'];
       const posLabel = posLabels[comp.finishPosition - 1] || `${comp.finishPosition}TH`;
-      const posColor = comp.finishPosition === 1 ? '#ffaa00' : (comp.finishPosition === 2 ? '#00f0ff' : '#ffffff');
+      const posColor = comp.finishPosition === 1 ? CYBER_THEME.PURPLE_HEX : (comp.finishPosition === 2 ? CYBER_THEME.CYAN_HEX : '#ffffff');
 
-      const posObj = this.add.text(colPos, rowY + 12, posLabel, {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '18px',
+      const posObj = this.add.text(colPos, rowY + 14, posLabel, {
+        fontFamily: CYBER_THEME.FONT_DISPLAY,
+        fontSize: '15px',
         color: posColor,
+        fontStyle: 'bold',
       });
 
       // Driver Name & Car
       const displayName = isPlayer ? `► YOU (${comp.carName})` : `${comp.name} [${comp.carName}]`;
       const nameObj = this.add.text(colDriver, rowY + 10, displayName, {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '12px',
-        color: isPlayer ? '#00f0ff' : (isWinner ? '#ffaa00' : '#ffffff'),
+        color: isPlayer ? CYBER_THEME.CYAN_HEX : (isWinner ? CYBER_THEME.PURPLE_HEX : '#ffffff'),
         fontStyle: 'bold',
       });
 
@@ -561,16 +571,16 @@ export class ResultsScene extends Phaser.Scene {
           ? 'PLAYER GRID COMPETITOR'
           : (this.isMultiplayer ? `REMOTE PILOT // ${comp.carId.toUpperCase()}` : `AI RIVAL // ${comp.carId.toUpperCase()}`),
         {
-          fontFamily: 'monospace',
+          fontFamily: CYBER_THEME.FONT_MONO,
           fontSize: '9px',
           color: '#64748b',
         }
       );
 
       // Finish / DNF Status
-      const statusColor = comp.status === 'FINISHED' ? '#10b981' : '#ef4444';
+      const statusColor = comp.status === 'FINISHED' ? CYBER_THEME.EMERALD_HEX : CYBER_THEME.CRIMSON_HEX;
       const statusObj = this.add.text(colStatus, rowY + 14, comp.status, {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '11px',
         color: statusColor,
         fontStyle: 'bold',
@@ -578,15 +588,15 @@ export class ResultsScene extends Phaser.Scene {
 
       // Best Lap
       const bestObj = this.add.text(colBest, rowY + 14, formatLapTime(comp.bestLapMs), {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '13px',
-        color: '#ffaa00',
+        color: CYBER_THEME.CYAN_HEX,
         fontStyle: 'bold',
       });
 
       // Total Time
       const totalObj = this.add.text(colTotal, rowY + 14, formatLapTime(comp.totalTimeMs), {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '13px',
         color: '#ffffff',
         fontStyle: 'bold',
@@ -595,9 +605,9 @@ export class ResultsScene extends Phaser.Scene {
       // Winner Badge Indicator on Right
       if (isWinner) {
         const winnerBadge = this.add.text(w - 36, rowY + 15, '★ WINNER', {
-          fontFamily: 'monospace',
+          fontFamily: CYBER_THEME.FONT_MONO,
           fontSize: '11px',
-          color: '#ffaa00',
+          color: CYBER_THEME.PURPLE_HEX,
           fontStyle: 'bold',
           letterSpacing: 1,
         }).setOrigin(1, 0);
@@ -609,11 +619,11 @@ export class ResultsScene extends Phaser.Scene {
 
     // 4. Player Lap Breakdown Mini-Bar (Centered)
     const lapSummaryY = 368;
-    const lapSumText = `YOUR SPLIT LAPS:  L1: ${formatLapTime(this.resultData.lapTimesMs[0] || 0)}  •  L2: ${formatLapTime(this.resultData.lapTimesMs[1] || 0)}  •  L3: ${formatLapTime(this.resultData.lapTimesMs[2] || 0)}`;
+    const lapSumText = `YOUR SPLIT LAPS:  L1: ${formatLapTime(this.resultData.lapTimesMs[0] || 0)}  //  L2: ${formatLapTime(this.resultData.lapTimesMs[1] || 0)}  //  L3: ${formatLapTime(this.resultData.lapTimesMs[2] || 0)}`;
     const lapSumObj = this.add.text(w / 2, lapSummaryY, lapSumText, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);
     container.add(lapSumObj);
@@ -621,9 +631,9 @@ export class ResultsScene extends Phaser.Scene {
     // 5. Verification Footer Bar
     const footerY = 405;
     const footerBg = this.add.graphics();
-    footerBg.fillStyle(0x061928, 0.9);
+    footerBg.fillStyle(CYBER_THEME.BG_NAVY, 0.92);
     footerBg.fillRoundedRect(24, footerY, w - 48, 55, 4);
-    footerBg.lineStyle(1, 0x00f0ff, 0.4);
+    footerBg.lineStyle(1, CYBER_THEME.CYAN, 0.5);
     footerBg.strokeRoundedRect(24, footerY, w - 48, 55, 4);
     container.add(footerBg);
 
@@ -634,9 +644,9 @@ export class ResultsScene extends Phaser.Scene {
         ? `OFFICIAL MULTIPLAYER CLASSIFICATION: ALL ${this.resultData.competitors.length} RACERS SYNCHRONIZED // SERVER AUTHORITATIVE`
         : 'OFFICIAL GRID CLASSIFICATION: ALL 4 COMPETITORS VALIDATED // FAIR PLAY TELEMETRY',
       {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
-        color: '#00f0ff',
+        color: CYBER_THEME.CYAN_HEX,
         fontStyle: 'bold',
       }
     );
@@ -647,7 +657,7 @@ export class ResultsScene extends Phaser.Scene {
         ? 'NETWORKING ENGINE: 20 HZ CLIENT INPUT STREAMING & 3-TIER RECONCILIATION VERIFIED'
         : 'AUTONOMOUS AI RACING ENGINE: DYNAMIC RACING LINES & REAL-TIME COLLISION RESPONSE CONFIRMED',
       {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
         color: '#94a3b8',
       }
@@ -671,6 +681,7 @@ export class ResultsScene extends Phaser.Scene {
       label: this.isMultiplayer ? 'MULTIPLAYER LOBBY' : 'RACE AGAIN',
       icon: this.isMultiplayer ? '👥' : '↺',
       isPrimary: true,
+      variant: 'primary',
       onClick: () => this.handleRaceAgain(),
     });
 
@@ -684,6 +695,7 @@ export class ResultsScene extends Phaser.Scene {
       label: 'MAIN MENU',
       icon: '◄',
       isPrimary: false,
+      variant: 'secondary',
       onClick: () => this.handleMainMenu(),
     });
 

@@ -7,7 +7,7 @@ import { AIController, type AIPersonality, type VehicleCollisionData } from '../
 import { CircuitTrack } from '../game/CircuitTrack';
 import { RaceManager, formatLapTime, type RaceResultData } from '../game/RaceManager';
 import { SoundEffects } from '../utils/SoundEffects';
-import { UIHelpers } from '../utils/UIHelpers';
+import { UIHelpers, CYBER_THEME } from '../utils/UIHelpers';
 import { settingsManager } from '../utils/SettingsManager';
 
 export class RaceScene extends Phaser.Scene {
@@ -382,12 +382,12 @@ export class RaceScene extends Phaser.Scene {
     this.countdownValue = 3;
 
     this.countdownText = this.add.text(width / 2, height / 2 - 40, '3', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
       fontSize: '110px',
-      color: '#ef4444',
-      stroke: '#080c18',
+      color: CYBER_THEME.CRIMSON_HEX,
+      stroke: CYBER_THEME.BG_DARK_HEX,
       strokeThickness: 12,
-      fontStyle: 'italic',
+      fontStyle: 'bold',
     })
       .setOrigin(0.5)
       .setDepth(150)
@@ -403,17 +403,17 @@ export class RaceScene extends Phaser.Scene {
         this.countdownValue--;
         if (this.countdownValue === 2) {
           this.countdownText.setText('2');
-          this.countdownText.setColor('#f97316');
+          this.countdownText.setColor(CYBER_THEME.PURPLE_HEX);
           SoundEffects.playCountdownBeep(false);
           this.animateCountdownNumber();
         } else if (this.countdownValue === 1) {
           this.countdownText.setText('1');
-          this.countdownText.setColor('#eab308');
+          this.countdownText.setColor(CYBER_THEME.CYAN_HEX);
           SoundEffects.playCountdownBeep(false);
           this.animateCountdownNumber();
         } else if (this.countdownValue === 0) {
           this.countdownText.setText('GO!');
-          this.countdownText.setColor('#10b981');
+          this.countdownText.setColor(CYBER_THEME.EMERALD_HEX);
           SoundEffects.playCountdownBeep(true);
           this.animateCountdownNumber();
 
@@ -421,8 +421,8 @@ export class RaceScene extends Phaser.Scene {
           this.isCountdownActive = false;
           this.raceManager.startRace();
 
-          // Camera flash on launch
-          this.cameras.main.flash(200, 16, 185, 129);
+          // Camera flash on launch (Emerald / Mint)
+          this.cameras.main.flash(200, 0, 255, 157);
 
           // Fade out countdown text
           this.time.delayedCall(700, () => {
@@ -463,32 +463,36 @@ export class RaceScene extends Phaser.Scene {
 
     // 1. Top Left: Circuit & Machine Info Pill
     const infoBg = this.add.graphics();
-    infoBg.fillStyle(0x0a1020, 0.88);
+    infoBg.fillStyle(CYBER_THEME.BG_GLASS, 0.92);
     infoBg.fillRoundedRect(24, 20, 270, 68, 6);
-    infoBg.lineStyle(1.5, 0x00f0ff, 0.5);
+    infoBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.6);
     infoBg.strokeRoundedRect(24, 20, 270, 68, 6);
+    // Accent corner ticks in purple
+    infoBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    infoBg.lineBetween(24, 28, 24, 20);
+    infoBg.lineBetween(24, 20, 32, 20);
     this.hudContainer.add(infoBg);
 
     const circuitName = this.add.text(40, 32, this.selectedTrack.name.toUpperCase(), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '17px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '15px',
       color: '#ffffff',
       letterSpacing: 1.5,
     });
 
     const carName = this.add.text(40, 56, `${this.selectedCar.name} [${this.selectedCar.class.split('//')[0].trim()}]`, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     });
 
     const diffBadge = this.add.text(278, 34, this.selectedDifficulty.id, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: this.selectedDifficulty.id === 'EASY'
-        ? '#10b981'
-        : this.selectedDifficulty.id === 'MEDIUM' ? '#ff5500' : '#ef4444',
+        ? CYBER_THEME.EMERALD_HEX
+        : this.selectedDifficulty.id === 'MEDIUM' ? CYBER_THEME.CYAN_HEX : CYBER_THEME.CRIMSON_HEX,
       fontStyle: 'bold',
     }).setOrigin(1, 0);
 
@@ -502,14 +506,17 @@ export class RaceScene extends Phaser.Scene {
 
     this.leaderboardContainer = this.add.container(lbX, lbY);
     const lbBg = this.add.graphics();
-    lbBg.fillStyle(0x0a1020, 0.88);
+    lbBg.fillStyle(CYBER_THEME.BG_GLASS, 0.92);
     lbBg.fillRoundedRect(0, 0, lbW, lbH, 6);
-    lbBg.lineStyle(1.5, 0x00f0ff, 0.5);
+    lbBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.6);
     lbBg.strokeRoundedRect(0, 0, lbW, lbH, 6);
+    // Purple accent top border line
+    lbBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    lbBg.lineBetween(0, 0, 40, 0);
     this.leaderboardContainer.add(lbBg);
 
     const lbTitle = this.add.text(14, 10, 'LIVE STANDINGS', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       fontStyle: 'bold',
@@ -517,9 +524,9 @@ export class RaceScene extends Phaser.Scene {
     });
 
     this.playerPosBadgeText = this.add.text(lbW - 14, 8, 'POS: 1 / 4', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '16px',
-      color: '#ffaa00',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '14px',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 1,
     }).setOrigin(1, 0);
 
@@ -536,22 +543,22 @@ export class RaceScene extends Phaser.Scene {
       this.leaderboardContainer.add(rowBg);
 
       const posText = this.add.text(14, ry + 2, `${r + 1}`, {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '14px',
+        fontFamily: CYBER_THEME.FONT_DISPLAY,
+        fontSize: '13px',
         color: '#94a3b8',
       });
 
       const nameText = this.add.text(42, ry + 3, '---', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '11px',
         color: '#ffffff',
         fontStyle: 'bold',
       });
 
       const lapText = this.add.text(lbW - 14, ry + 3, 'L1', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
-        color: '#00f0ff',
+        color: CYBER_THEME.CYAN_HEX,
       }).setOrigin(1, 0);
 
       this.leaderboardContainer.add([posText, nameText, lapText]);
@@ -568,38 +575,41 @@ export class RaceScene extends Phaser.Scene {
 
     const telemetryPanel = this.add.container(panelX, panelY);
     const telBg = this.add.graphics();
-    telBg.fillStyle(0x0a1020, 0.92);
+    telBg.fillStyle(CYBER_THEME.BG_NAVY, 0.94);
     telBg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 6);
-    telBg.lineStyle(1.5, 0x00f0ff, 0.6);
+    telBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.7);
     telBg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 6);
+    // Purple scanner line at top of telemetry panel
+    telBg.lineStyle(2, CYBER_THEME.PURPLE, 0.85);
+    telBg.lineBetween(-panelW / 4, -panelH / 2, panelW / 4, -panelH / 2);
     telemetryPanel.add(telBg);
 
     // Lap Counter Badge
     this.lapCounterText = this.add.text(-panelW / 2 + 20, -18, 'LAP 1 / 3', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '24px',
-      color: '#00f0ff',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '20px',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 1,
     });
 
     // Current Lap Timer
-    this.currentLapTimerText = this.add.text(-panelW / 2 + 135, -20, 'CURRENT: 00:00.000', {
-      fontFamily: 'monospace',
+    this.currentLapTimerText = this.add.text(-panelW / 2 + 145, -20, 'CURRENT: 00:00.000', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '13px',
       color: '#ffffff',
       fontStyle: 'bold',
     });
 
     // Best Lap Record
-    this.bestLapTimerText = this.add.text(-panelW / 2 + 135, 2, 'BEST: --:--.---', {
-      fontFamily: 'monospace',
+    this.bestLapTimerText = this.add.text(-panelW / 2 + 145, 2, 'BEST: --:--.---', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#ffaa00',
+      color: CYBER_THEME.CYAN_HEX,
     });
 
     // Total Race Time
     this.totalRaceTimerText = this.add.text(panelW / 2 - 20, -20, 'TOTAL: 00:00.000', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '13px',
       color: '#cbd5e1',
       fontStyle: 'bold',
@@ -607,17 +617,19 @@ export class RaceScene extends Phaser.Scene {
 
     // Progress percentage
     this.progressPercentText = this.add.text(panelW / 2 - 20, 2, 'PROGRESS: 0%', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     }).setOrigin(1, 0);
 
     // Progress Bar Track & Fill
     const barW = panelW - 40;
     const barTrack = this.add.graphics();
-    barTrack.fillStyle(0x1e293b, 1);
+    barTrack.fillStyle(CYBER_THEME.BG_DARK, 1);
     barTrack.fillRoundedRect(-barW / 2, panelH / 2 - 10, barW, 4, 2);
+    barTrack.lineStyle(1, 0x1e293b, 0.6);
+    barTrack.strokeRoundedRect(-barW / 2, panelH / 2 - 10, barW, 4, 2);
     telemetryPanel.add(barTrack);
 
     this.progressBarGraphics = this.add.graphics();
@@ -642,6 +654,7 @@ export class RaceScene extends Phaser.Scene {
       label: 'EXIT RACE',
       icon: '◄',
       isPrimary: false,
+      variant: 'secondary',
       onClick: () => this.togglePause(),
     });
     exitBtn.setScrollFactor(0);
@@ -649,21 +662,21 @@ export class RaceScene extends Phaser.Scene {
 
     // 5. Bottom Left: Control Hints
     const hintsBg = this.add.graphics();
-    hintsBg.fillStyle(0x0a1020, 0.8);
+    hintsBg.fillStyle(CYBER_THEME.BG_GLASS, 0.85);
     hintsBg.fillRoundedRect(24, height - 76, 320, 56, 6);
-    hintsBg.lineStyle(1, 0x1e293b, 0.7);
+    hintsBg.lineStyle(1, CYBER_THEME.CYAN, 0.4);
     hintsBg.strokeRoundedRect(24, height - 76, 320, 56, 6);
     this.hudContainer.add(hintsBg);
 
     const hint1 = this.add.text(38, height - 64, 'STEER: [W/A/S/D] or [ARROWS]', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#cbd5e1',
     });
-    const hint2 = this.add.text(38, height - 48, 'DRIFT: [SPACE]  •  NITRO: [SHIFT]  •  MENU: [ESC]', {
-      fontFamily: 'monospace',
+    const hint2 = this.add.text(38, height - 48, 'DRIFT: [SPACE] // NITRO: [SHIFT] // MENU: [ESC]', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     });
     this.hudContainer.add([hint1, hint2]);
@@ -673,10 +686,14 @@ export class RaceScene extends Phaser.Scene {
     const clusterY = height - 110;
 
     const clusterBg = this.add.graphics();
-    clusterBg.fillStyle(0x0a1020, 0.92);
+    clusterBg.fillStyle(CYBER_THEME.BG_NAVY, 0.94);
     clusterBg.fillRoundedRect(clusterX - 30, clusterY - 30, 220, 120, 8);
-    clusterBg.lineStyle(1.5, 0x00f0ff, 0.6);
+    clusterBg.lineStyle(1.5, CYBER_THEME.CYAN, 0.7);
     clusterBg.strokeRoundedRect(clusterX - 30, clusterY - 30, 220, 120, 8);
+    // Neon purple accent corner
+    clusterBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    clusterBg.lineBetween(clusterX + 190, clusterY - 22, clusterX + 190, clusterY - 30);
+    clusterBg.lineBetween(clusterX + 178, clusterY - 30, clusterX + 190, clusterY - 30);
     this.hudContainer.add(clusterBg);
 
     // Speedometer Arc Graphics
@@ -685,13 +702,14 @@ export class RaceScene extends Phaser.Scene {
 
     // Speed Number
     this.speedNumberText = this.add.text(clusterX + 60, clusterY + 12, '0', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '46px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '44px',
       color: '#ffffff',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const kmhLabel = this.add.text(clusterX + 60, clusterY + 42, 'KM / H', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       letterSpacing: 2,
@@ -699,14 +717,14 @@ export class RaceScene extends Phaser.Scene {
 
     // Gear indicator
     this.gearText = this.add.text(clusterX - 10, clusterY + 12, 'N', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '24px',
-      color: '#00f0ff',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '22px',
+      color: CYBER_THEME.CYAN_HEX,
     }).setOrigin(0.5);
 
     // Drift Status Indicator
     this.driftStatusText = this.add.text(clusterX + 60, clusterY - 14, 'GRIP', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '10px',
       color: '#94a3b8',
       fontStyle: 'bold',
@@ -717,9 +735,9 @@ export class RaceScene extends Phaser.Scene {
 
     // Nitro Meter Bar (Horizontal)
     const nitroTrack = this.add.graphics();
-    nitroTrack.fillStyle(0x0f172a, 1);
+    nitroTrack.fillStyle(CYBER_THEME.BG_DARK, 1);
     nitroTrack.fillRoundedRect(clusterX - 15, clusterY + 62, 185, 14, 3);
-    nitroTrack.lineStyle(1, 0x334155, 0.8);
+    nitroTrack.lineStyle(1, 0x1e293b, 0.8);
     nitroTrack.strokeRoundedRect(clusterX - 15, clusterY + 62, 185, 14, 3);
     this.hudContainer.add(nitroTrack);
 
@@ -727,7 +745,7 @@ export class RaceScene extends Phaser.Scene {
     this.hudContainer.add(this.nitroFillGraphics);
 
     this.nitroPercentText = this.add.text(clusterX + 75, clusterY + 69, 'NITRO 100%', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '9px',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -742,16 +760,16 @@ export class RaceScene extends Phaser.Scene {
     // 1. Wrong Way Warning Banner
     this.wrongWayBanner = this.add.container(width / 2, 140).setDepth(150).setScrollFactor(0);
     const wwBg = this.add.graphics();
-    wwBg.fillStyle(0x7f1d1d, 0.95);
+    wwBg.fillStyle(CYBER_THEME.BG_NAVY, 0.95);
     wwBg.fillRoundedRect(-160, -20, 320, 40, 6);
-    wwBg.lineStyle(2, 0xef4444, 1);
+    wwBg.lineStyle(2, CYBER_THEME.CRIMSON, 1);
     wwBg.strokeRoundedRect(-160, -20, 320, 40, 6);
     this.wrongWayBanner.add(wwBg);
 
     const wwText = this.add.text(0, 0, '⚠ WRONG WAY — TURN AROUND ⚠', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '13px',
-      color: '#ffffff',
+      color: CYBER_THEME.CRIMSON_HEX,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.wrongWayBanner.add(wwText);
@@ -768,35 +786,38 @@ export class RaceScene extends Phaser.Scene {
 
     // 2. High-Impact Center Announcement Text
     this.announcementText = this.add.text(width / 2, height / 2 - 30, '', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
-      fontSize: '84px',
-      color: '#ff3300',
-      stroke: '#050811',
-      strokeThickness: 12,
-      fontStyle: 'italic',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '72px',
+      color: CYBER_THEME.PURPLE_HEX,
+      stroke: CYBER_THEME.BG_DARK_HEX,
+      strokeThickness: 10,
+      fontStyle: 'bold',
       letterSpacing: 2,
     }).setOrigin(0.5).setDepth(160).setScrollFactor(0).setAlpha(0);
 
     // 3. Lap Notice Container
     this.lapNoticeContainer = this.add.container(width / 2, height / 2 - 70).setDepth(155).setScrollFactor(0).setAlpha(0);
     const lnBg = this.add.graphics();
-    lnBg.fillStyle(0x0a1020, 0.94);
+    lnBg.fillStyle(CYBER_THEME.BG_NAVY, 0.94);
     lnBg.fillRoundedRect(-220, -28, 440, 56, 8);
-    lnBg.lineStyle(2, 0x00f0ff, 0.9);
+    lnBg.lineStyle(2, CYBER_THEME.CYAN, 0.9);
     lnBg.strokeRoundedRect(-220, -28, 440, 56, 8);
+    // Purple accent line on top of lap notice
+    lnBg.lineStyle(2, CYBER_THEME.PURPLE, 0.9);
+    lnBg.lineBetween(-80, -28, 80, -28);
     this.lapNoticeContainer.add(lnBg);
 
     const lnTitle = this.add.text(0, -8, '', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
       color: '#ffffff',
       letterSpacing: 1.5,
     }).setOrigin(0.5);
 
     const lnSub = this.add.text(0, 14, '', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -1227,9 +1248,9 @@ export class RaceScene extends Phaser.Scene {
     // 1. Lap Counter
     this.lapCounterText.setText(`LAP ${this.raceManager.currentLap} / ${this.raceManager.totalLaps}`);
     if (this.raceManager.currentLap === this.raceManager.totalLaps) {
-      this.lapCounterText.setColor('#ff5500');
+      this.lapCounterText.setColor(CYBER_THEME.PURPLE_HEX);
     } else {
-      this.lapCounterText.setColor('#00f0ff');
+      this.lapCounterText.setColor(CYBER_THEME.CYAN_HEX);
     }
 
     // 2. Timers
@@ -1246,7 +1267,7 @@ export class RaceScene extends Phaser.Scene {
     const fillW = Math.max(0, (progressPct / 100) * barW);
 
     this.progressBarGraphics.clear();
-    const barColor = this.raceManager.currentLap === 3 ? 0xff5500 : 0x00f0ff;
+    const barColor = this.raceManager.currentLap === 3 ? CYBER_THEME.PURPLE : CYBER_THEME.CYAN;
     this.progressBarGraphics.fillStyle(barColor, 0.95);
     this.progressBarGraphics.fillRoundedRect(-barW / 2, 36 - 10, fillW, 4, 2);
 
@@ -1254,7 +1275,7 @@ export class RaceScene extends Phaser.Scene {
     const leaderboard = this.raceManager.getLeaderboard();
     const playerPos = this.raceManager.getPlayerPosition();
     this.playerPosBadgeText.setText(`POS: ${playerPos} / 4`);
-    this.playerPosBadgeText.setColor(playerPos === 1 ? '#ffaa00' : (playerPos <= 2 ? '#00f0ff' : '#cbd5e1'));
+    this.playerPosBadgeText.setColor(playerPos === 1 ? CYBER_THEME.CYAN_HEX : (playerPos <= 2 ? CYBER_THEME.PURPLE_HEX : '#cbd5e1'));
 
     for (let i = 0; i < 4; i++) {
       const comp = leaderboard[i];
@@ -1263,23 +1284,23 @@ export class RaceScene extends Phaser.Scene {
 
       row.bg.clear();
       if (comp.isPlayer) {
-        row.bg.fillStyle(0x0e2f44, 0.9);
+        row.bg.fillStyle(0x0f2444, 0.95);
         row.bg.fillRoundedRect(6, 32 + i * 23, 270 - 12, 21, 3);
-        row.bg.lineStyle(1, 0x00f0ff, 0.8);
+        row.bg.lineStyle(1.5, CYBER_THEME.CYAN, 0.9);
         row.bg.strokeRoundedRect(6, 32 + i * 23, 270 - 12, 21, 3);
 
-        row.posText.setColor('#ffaa00');
+        row.posText.setColor(CYBER_THEME.CYAN_HEX);
         row.nameText.setText(`► ${comp.name}`);
-        row.nameText.setColor('#ffaa00');
+        row.nameText.setColor(CYBER_THEME.CYAN_HEX);
       } else {
-        row.posText.setColor(i === 0 ? '#ffaa00' : '#94a3b8');
+        row.posText.setColor(i === 0 ? CYBER_THEME.PURPLE_HEX : '#94a3b8');
         row.nameText.setText(`  ${comp.name}`);
         row.nameText.setColor(i === 0 ? '#ffffff' : '#94a3b8');
       }
 
       const lapDisplay = comp.isFinished ? 'FIN' : `L${comp.currentLap}`;
       row.lapText.setText(lapDisplay);
-      row.lapText.setColor(comp.isFinished ? '#10b981' : '#00f0ff');
+      row.lapText.setColor(comp.isFinished ? CYBER_THEME.EMERALD_HEX : CYBER_THEME.CYAN_HEX);
     }
 
     // 5. Wrong Way Banner Visibility
@@ -1290,9 +1311,9 @@ export class RaceScene extends Phaser.Scene {
     this.speedNumberText.setText(kmh.toString());
 
     if (kmh > 260) {
-      this.speedNumberText.setColor('#ff3300');
+      this.speedNumberText.setColor(CYBER_THEME.PURPLE_HEX);
     } else if (kmh > 180) {
-      this.speedNumberText.setColor('#f97316');
+      this.speedNumberText.setColor(CYBER_THEME.CYAN_HEX);
     } else {
       this.speedNumberText.setColor('#ffffff');
     }
@@ -1300,13 +1321,13 @@ export class RaceScene extends Phaser.Scene {
     // Gear indicator
     if (this.player.isNitroActive) {
       this.gearText.setText('NITRO');
-      this.gearText.setColor('#ff5500');
+      this.gearText.setColor(CYBER_THEME.PURPLE_HEX);
     } else if (this.player.isReverseGear || this.player.forwardSpeed < -5) {
       this.gearText.setText('R');
-      this.gearText.setColor('#ef4444');
+      this.gearText.setColor(CYBER_THEME.CRIMSON_HEX);
     } else if (this.player.forwardSpeed > 8) {
       this.gearText.setText('D');
-      this.gearText.setColor('#00f0ff');
+      this.gearText.setColor(CYBER_THEME.CYAN_HEX);
     } else {
       this.gearText.setText('N');
       this.gearText.setColor('#94a3b8');
@@ -1315,7 +1336,7 @@ export class RaceScene extends Phaser.Scene {
     // Drift status label
     if (this.player.isDrifting) {
       this.driftStatusText.setText(this.player.driftAngleDeg > 15 ? 'POWERSLIDE' : 'DRIFTING');
-      this.driftStatusText.setColor('#f59e0b');
+      this.driftStatusText.setColor(CYBER_THEME.PURPLE_HEX);
     } else {
       this.driftStatusText.setText('TRACTION');
       this.driftStatusText.setColor('#94a3b8');
@@ -1332,16 +1353,16 @@ export class RaceScene extends Phaser.Scene {
     const currentBarW = Math.max(0, (nitroPct / 100) * maxBarW);
 
     this.nitroFillGraphics.clear();
-    const nitroColor = this.player.isNitroActive ? 0xff5500 : 0x00f0ff;
+    const nitroColor = this.player.isNitroActive ? CYBER_THEME.PURPLE : CYBER_THEME.CYAN;
     this.nitroFillGraphics.fillStyle(nitroColor, 0.95);
     this.nitroFillGraphics.fillRoundedRect(clusterX - 13, clusterY + 64, currentBarW, 10, 2);
   }
 
   private flashCheckpointNotice(cpIndex: number): void {
     if (cpIndex === 0) return;
-    this.progressPercentText.setColor('#10b981');
+    this.progressPercentText.setColor(CYBER_THEME.EMERALD_HEX);
     this.time.delayedCall(300, () => {
-      this.progressPercentText.setColor('#00f0ff');
+      this.progressPercentText.setColor(CYBER_THEME.CYAN_HEX);
     });
   }
 
@@ -1351,10 +1372,10 @@ export class RaceScene extends Phaser.Scene {
   private showMiniTurboNotice(boostAmount: number): void {
     const { width, height } = this.scale;
     const miniTurboText = this.add.text(width / 2, height - 170, `⚡ MINI-TURBO +${boostAmount}% ⚡`, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '28px',
-      color: '#00f0ff',
-      stroke: '#050811',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '24px',
+      color: CYBER_THEME.CYAN_HEX,
+      stroke: CYBER_THEME.BG_DARK_HEX,
       strokeThickness: 5,
       letterSpacing: 2,
     }).setOrigin(0.5).setDepth(160).setScrollFactor(0);
@@ -1382,11 +1403,11 @@ export class RaceScene extends Phaser.Scene {
     const subText = this.lapNoticeContainer.getAt(2) as Phaser.GameObjects.Text;
 
     titleText.setText(`LAP ${lapNumber} COMPLETED`);
-    titleText.setColor(isBest ? '#ffaa00' : '#ffffff');
+    titleText.setColor(isBest ? CYBER_THEME.PURPLE_HEX : '#ffffff');
 
     const formatted = formatLapTime(lapTimeMs);
     subText.setText(isBest ? `★ BEST LAP: ${formatted}` : `TIME: ${formatted}`);
-    subText.setColor(isBest ? '#ffaa00' : '#00f0ff');
+    subText.setColor(isBest ? CYBER_THEME.CYAN_HEX : '#00f3ff');
 
     this.lapNoticeContainer.setAlpha(1);
     this.lapNoticeContainer.setScale(1.1);
@@ -1418,7 +1439,7 @@ export class RaceScene extends Phaser.Scene {
     }
 
     this.announcementText.setText('⚡ FINAL LAP! ⚡');
-    this.announcementText.setColor('#ff3300');
+    this.announcementText.setColor(CYBER_THEME.PURPLE_HEX);
     this.announcementText.setScale(0.5);
     this.announcementText.setAlpha(1);
 
@@ -1445,12 +1466,12 @@ export class RaceScene extends Phaser.Scene {
   private handleRaceFinished(results: RaceResultData): void {
     this.isRaceFinished = true;
     SoundEffects.playFinishRace();
-    this.cameras.main.flash(400, 16, 185, 129);
+    this.cameras.main.flash(400, 0, 255, 157);
 
     const playerPos = results.playerPosition;
     const bannerText = playerPos === 1 ? '🏁 VICTORY! 1ST PLACE 🏁' : `🏁 FINISH! POS: ${playerPos}/4 🏁`;
     this.announcementText.setText(bannerText);
-    this.announcementText.setColor(playerPos === 1 ? '#ffaa00' : '#10b981');
+    this.announcementText.setColor(playerPos === 1 ? CYBER_THEME.CYAN_HEX : CYBER_THEME.EMERALD_HEX);
     this.announcementText.setScale(0.6);
     this.announcementText.setAlpha(1);
 
@@ -1509,7 +1530,7 @@ export class RaceScene extends Phaser.Scene {
     this.pauseContainer = this.add.container(width / 2, height / 2).setDepth(200).setScrollFactor(0);
 
     const backdrop = this.add.graphics();
-    backdrop.fillStyle(0x000000, 0.78);
+    backdrop.fillStyle(0x000000, 0.82);
     backdrop.fillRect(-width / 2, -height / 2, width, height);
     backdrop.setInteractive(
       new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
@@ -1520,15 +1541,18 @@ export class RaceScene extends Phaser.Scene {
     const modalW = 460;
     const modalH = 320;
     const frame = this.add.graphics();
-    frame.fillStyle(0x0a1020, 0.98);
+    frame.fillStyle(CYBER_THEME.BG_NAVY, 0.98);
     frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 8);
-    frame.lineStyle(2, 0x00f0ff, 0.8);
+    frame.lineStyle(2, CYBER_THEME.CYAN, 0.85);
     frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 8);
+    // Neon purple header strip
+    frame.lineStyle(3, CYBER_THEME.PURPLE, 0.95);
+    frame.lineBetween(-modalW / 3, -modalH / 2, modalW / 3, -modalH / 2);
     this.pauseContainer.add(frame);
 
     const title = this.add.text(0, -modalH / 2 + 32, 'RACE PAUSED', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '26px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '22px',
       color: '#ffffff',
       letterSpacing: 2,
     }).setOrigin(0.5);
@@ -1539,9 +1563,9 @@ export class RaceScene extends Phaser.Scene {
       -modalH / 2 + 65,
       `// ${this.selectedTrack.name.toUpperCase()} • ${this.selectedCar.name} //`,
       {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '11px',
-        color: '#00f0ff',
+        color: CYBER_THEME.CYAN_HEX,
       }
     ).setOrigin(0.5);
     this.pauseContainer.add(subtitle);
@@ -1555,6 +1579,7 @@ export class RaceScene extends Phaser.Scene {
       label: 'RESUME RACE',
       icon: '▶',
       isPrimary: true,
+      variant: 'primary',
       onClick: () => this.resumeRace(),
     });
     this.pauseContainer.add(resumeBtn);
@@ -1568,6 +1593,7 @@ export class RaceScene extends Phaser.Scene {
       label: 'RESTART CIRCUIT',
       icon: '↺',
       isPrimary: false,
+      variant: 'secondary',
       onClick: () => this.restartRace(),
     });
     this.pauseContainer.add(restartBtn);
@@ -1581,6 +1607,7 @@ export class RaceScene extends Phaser.Scene {
       label: 'EXIT TO MAIN MENU',
       icon: '✕',
       isPrimary: false,
+      variant: 'danger',
       onClick: () => this.exitToMainMenu(),
     });
     this.pauseContainer.add(exitBtn);
@@ -1646,17 +1673,20 @@ export class RaceScene extends Phaser.Scene {
 
     // 1. Semi-transparent Cyber Frame
     const frame = this.add.graphics();
-    frame.fillStyle(0x0a1020, 0.88);
+    frame.fillStyle(CYBER_THEME.BG_NAVY, 0.9);
     frame.fillRoundedRect(0, 0, mapW, mapH, 6);
-    frame.lineStyle(1.5, 0x00f0ff, 0.5);
+    frame.lineStyle(1.5, CYBER_THEME.CYAN, 0.6);
     frame.strokeRoundedRect(0, 0, mapW, mapH, 6);
+    // Purple accent top tick
+    frame.lineStyle(2, CYBER_THEME.PURPLE, 0.85);
+    frame.lineBetween(0, 0, 30, 0);
     this.minimapContainer.add(frame);
 
     // 2. Header Label
     const title = this.add.text(12, 8, 'RADAR // CIRCUIT', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '9px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       fontStyle: 'bold',
       letterSpacing: 1,
     });
@@ -1699,7 +1729,7 @@ export class RaceScene extends Phaser.Scene {
       this.minimapTrackGraphics.strokePath();
 
       // Inner centerline
-      this.minimapTrackGraphics.lineStyle(2, 0x38bdf8, 0.7);
+      this.minimapTrackGraphics.lineStyle(2, CYBER_THEME.CYAN, 0.75);
       this.minimapTrackGraphics.beginPath();
       this.minimapTrackGraphics.moveTo(
         this.minimapOffsetX + p0.x * this.minimapScale,
@@ -1717,7 +1747,7 @@ export class RaceScene extends Phaser.Scene {
       // Start/Finish Gate Marker
       const sfX = this.minimapOffsetX + p0.x * this.minimapScale;
       const sfY = this.minimapOffsetY + p0.y * this.minimapScale;
-      this.minimapTrackGraphics.fillStyle(0xffaa00, 1.0);
+      this.minimapTrackGraphics.fillStyle(CYBER_THEME.PURPLE, 1.0);
       this.minimapTrackGraphics.fillCircle(sfX, sfY, 3);
     }
 
@@ -1747,20 +1777,20 @@ export class RaceScene extends Phaser.Scene {
       const my = this.minimapOffsetY + ai.y * this.minimapScale;
 
       let color = 0xffffff;
-      if (ai.id.includes('viper')) color = 0xeab308; // Gold
-      else if (ai.id.includes('rally')) color = 0xffffff; // White
-      else if (ai.id.includes('titan')) color = 0xef4444; // Red
+      if (ai.id.includes('viper')) color = CYBER_THEME.PURPLE;
+      else if (ai.id.includes('rally')) color = 0xffffff;
+      else if (ai.id.includes('titan')) color = CYBER_THEME.CRIMSON;
 
       this.minimapPipsGraphics.fillStyle(color, 0.95);
       this.minimapPipsGraphics.fillCircle(mx, my, 2.8);
     }
 
-    // 2. Draw Player (Cyan with white core + direction indicator notch)
+    // 2. Draw Player (Electric Cyan with white core + direction indicator notch)
     const px = this.minimapOffsetX + this.player.x * this.minimapScale;
     const py = this.minimapOffsetY + this.player.y * this.minimapScale;
 
     // Cyan base
-    this.minimapPipsGraphics.fillStyle(0x00f0ff, 1.0);
+    this.minimapPipsGraphics.fillStyle(CYBER_THEME.CYAN, 1.0);
     this.minimapPipsGraphics.fillCircle(px, py, 3.8);
 
     // White core
@@ -1771,7 +1801,7 @@ export class RaceScene extends Phaser.Scene {
     const notchLen = 6.5;
     const notchX = px + Math.cos(this.player.rotation) * notchLen;
     const notchY = py + Math.sin(this.player.rotation) * notchLen;
-    this.minimapPipsGraphics.lineStyle(1.8, 0x00f0ff, 1.0);
+    this.minimapPipsGraphics.lineStyle(1.8, CYBER_THEME.CYAN, 1.0);
     this.minimapPipsGraphics.lineBetween(px, py, notchX, notchY);
   }
 

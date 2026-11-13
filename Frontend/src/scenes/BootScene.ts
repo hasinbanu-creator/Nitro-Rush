@@ -13,27 +13,53 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    // Create a sleek futuristic loading bar
+    // Deep Navy/Black background
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x050811, 0x050811, 0x0a1020, 0x060914, 1);
+    bg.fillRect(0, 0, width, height);
+
+    // Sleek futuristic loading bar with Electric Cyan & Neon Purple
     const progressBox = this.add.graphics();
     const progressBar = this.add.graphics();
 
-    progressBox.fillStyle(0x0e1424, 0.8);
-    progressBox.lineStyle(2, 0xff5500, 0.9);
-    progressBox.strokeRect(width / 2 - 160, height / 2, 320, 16);
-    progressBox.fillRect(width / 2 - 160, height / 2, 320, 16);
+    progressBox.fillStyle(0x0a1020, 0.95);
+    progressBox.lineStyle(2, 0x00f3ff, 0.9);
+    progressBox.strokeRoundedRect(width / 2 - 160, height / 2, 320, 16, 4);
+    progressBox.fillRoundedRect(width / 2 - 160, height / 2, 320, 16, 4);
+
+    // Glowing Title with Cyan & Purple
+    const titleGlow = this.add.text(width / 2, height / 2 - 50, 'NITRO RUSH', {
+      fontFamily: '"Orbitron", "Impact", "Segoe UI", sans-serif',
+      fontSize: '36px',
+      color: '#00f3ff',
+      fontStyle: 'bold',
+      stroke: '#b026ff',
+      strokeThickness: 8,
+    }).setOrigin(0.5).setAlpha(0.7).setBlendMode(Phaser.BlendModes.ADD);
 
     this.add.text(width / 2, height / 2 - 50, 'NITRO RUSH', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '32px',
+      fontFamily: '"Orbitron", "Impact", "Segoe UI", sans-serif',
+      fontSize: '36px',
       color: '#ffffff',
-      stroke: '#ff3300',
-      strokeThickness: 3,
+      fontStyle: 'bold',
+      stroke: '#050811',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    const statusText = this.add.text(width / 2, height / 2 + 35, 'INITIALIZING GAME ENGINE...', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#00f0ff',
+    this.tweens.add({
+      targets: titleGlow,
+      alpha: { from: 0.5, to: 0.9 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    const statusText = this.add.text(width / 2, height / 2 + 35, 'SYSTEM ONLINE // INITIALIZING NEON GRID...', {
+      fontFamily: '"Consolas", "Courier New", monospace',
+      fontSize: '12px',
+      color: '#00f3ff',
+      fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
 
     // Smoothly animate progress bar and transition to MainMenuScene
@@ -44,12 +70,12 @@ export class BootScene extends Phaser.Scene {
       onUpdate: (tween) => {
         const val = tween.getValue() ?? 0;
         progressBar.clear();
-        progressBar.fillStyle(0xff5500, 1);
-        progressBar.fillRect(width / 2 - 156, height / 2 + 4, 312 * val, 8);
+        progressBar.fillStyle(0x00f3ff, 1);
+        progressBar.fillRoundedRect(width / 2 - 156, height / 2 + 3, 312 * val, 10, 2);
       },
       onComplete: () => {
-        statusText.setText('SYSTEMS READY');
-        this.cameras.main.fadeOut(200, 7, 10, 20);
+        statusText.setText('SYSTEMS READY // LAUNCHING');
+        this.cameras.main.fadeOut(200, 5, 8, 17);
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
           this.scene.start('MainMenuScene');
         });
@@ -62,10 +88,13 @@ export class BootScene extends Phaser.Scene {
    * avoiding any external copyrighted asset dependencies.
    */
   private generateProceduralAssets(): void {
-    this.generateGlowParticle('particle_orange', '#ffffff', '#ff6600', '#ff1100');
-    this.generateGlowParticle('particle_blue', '#ffffff', '#00f0ff', '#0044ff');
-    this.generateGlowParticle('particle_green', '#ffffff', '#10b981', '#065f46');
-    this.generateGlowParticle('particle_ember', '#ffffaa', '#ff7700', '#bb1100', 16);
+    // Neon Cyberpunk Core Particles
+    this.generateGlowParticle('particle_cyan', '#ffffff', '#00f3ff', '#0284c7');
+    this.generateGlowParticle('particle_purple', '#ffffff', '#b026ff', '#6b21a8');
+    this.generateGlowParticle('particle_blue', '#ffffff', '#00f3ff', '#0284c7');
+    this.generateGlowParticle('particle_orange', '#ffffff', '#00f3ff', '#b026ff'); // Aliased to Cyberpunk Cyan-Purple
+    this.generateGlowParticle('particle_green', '#ffffff', '#00ff9d', '#059669');
+    this.generateGlowParticle('particle_ember', '#ffffff', '#00f3ff', '#b026ff', 16);
     this.generateAmbientGlow('glow_orb', 128);
     this.generateSpeedStreak('speed_streak', 140, 4);
 
@@ -444,8 +473,8 @@ export class BootScene extends Phaser.Scene {
     const ctx = canvas.getContext();
     const half = size / 2;
     const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
-    gradient.addColorStop(0, 'rgba(255, 100, 0, 0.6)');
-    gradient.addColorStop(0.5, 'rgba(255, 30, 0, 0.2)');
+    gradient.addColorStop(0, 'rgba(0, 243, 255, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(176, 38, 255, 0.25)');
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = gradient;
@@ -464,11 +493,11 @@ export class BootScene extends Phaser.Scene {
 
     const ctx = canvas.getContext();
     const grad = ctx.createLinearGradient(0, 0, width, 0);
-    grad.addColorStop(0, 'rgba(255, 80, 0, 0)');
-    grad.addColorStop(0.2, 'rgba(255, 140, 40, 0.7)');
+    grad.addColorStop(0, 'rgba(0, 243, 255, 0)');
+    grad.addColorStop(0.2, 'rgba(0, 243, 255, 0.7)');
     grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
-    grad.addColorStop(0.8, 'rgba(255, 140, 40, 0.7)');
-    grad.addColorStop(1, 'rgba(255, 80, 0, 0)');
+    grad.addColorStop(0.8, 'rgba(176, 38, 255, 0.7)');
+    grad.addColorStop(1, 'rgba(176, 38, 255, 0)');
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);

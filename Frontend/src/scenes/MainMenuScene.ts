@@ -72,21 +72,22 @@ export class MainMenuScene extends Phaser.Scene {
    */
   private createCyberBackground(width: number, height: number): void {
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x060811, 0x060811, 0x0c1122, 0x090c1a, 1);
+    bg.fillGradientStyle(0x050811, 0x050811, 0x0a1020, 0x060914, 1);
     bg.fillRect(0, 0, width, height);
 
     // Dynamic animated grid graphics layer
     this.backgroundGrid = this.add.graphics();
 
-    // Ambient Glowing Orbs
-    const orangeGlow = this.add.sprite(width * 0.15, height * 0.85, 'glow_orb')
+    // Ambient Glowing Orbs: Electric Cyan (bottom-left) and Neon Purple (top-right)
+    const cyanGlow = this.add.sprite(width * 0.15, height * 0.85, 'glow_orb')
       .setScale(3.5)
-      .setAlpha(0.25)
+      .setTint(0x00f3ff)
+      .setAlpha(0.22)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.tweens.add({
-      targets: orangeGlow,
-      alpha: { from: 0.18, to: 0.32 },
+      targets: cyanGlow,
+      alpha: { from: 0.16, to: 0.28 },
       scale: { from: 3.2, to: 3.8 },
       duration: 3500,
       yoyo: true,
@@ -94,16 +95,16 @@ export class MainMenuScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
-    const blueGlow = this.add.sprite(width * 0.8, height * 0.2, 'glow_orb')
-      .setTint(0x00f0ff)
-      .setScale(3)
-      .setAlpha(0.18)
+    const purpleGlow = this.add.sprite(width * 0.85, height * 0.18, 'glow_orb')
+      .setTint(0xb026ff)
+      .setScale(3.2)
+      .setAlpha(0.2)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.tweens.add({
-      targets: blueGlow,
-      alpha: { from: 0.12, to: 0.24 },
-      scale: { from: 2.8, to: 3.4 },
+      targets: purpleGlow,
+      alpha: { from: 0.14, to: 0.26 },
+      scale: { from: 3.0, to: 3.6 },
       duration: 4200,
       yoyo: true,
       repeat: -1,
@@ -123,7 +124,7 @@ export class MainMenuScene extends Phaser.Scene {
       const speed = Phaser.Math.Between(450, 950);
       const scaleX = Phaser.Math.FloatBetween(0.4, 1.2);
       const scaleY = Phaser.Math.FloatBetween(0.8, 2.0);
-      const alpha = Phaser.Math.FloatBetween(0.15, 0.55);
+      const alpha = Phaser.Math.FloatBetween(0.15, 0.45);
 
       const streak = this.add.sprite(x, y, 'speed_streak')
         .setAngle(90) // Vertical downward streak
@@ -134,7 +135,7 @@ export class MainMenuScene extends Phaser.Scene {
       this.speedStreaks.push({ sprite: streak, speed });
     }
 
-    // 2. Floating glowing embers rising slowly from the bottom
+    // 2. Floating glowing cyber embers rising slowly from the bottom
     const emberCount = 22;
     for (let i = 0; i < emberCount; i++) {
       const x = Phaser.Math.Between(20, width - 20);
@@ -143,9 +144,11 @@ export class MainMenuScene extends Phaser.Scene {
       const wobbleSpeed = Phaser.Math.FloatBetween(1.5, 3.5);
       const wobbleDist = Phaser.Math.FloatBetween(15, 45);
 
+      const isPurple = i % 2 === 0;
       const ember = this.add.sprite(x, y, 'particle_ember')
-        .setScale(Phaser.Math.FloatBetween(0.6, 1.3))
-        .setAlpha(Phaser.Math.FloatBetween(0.3, 0.8))
+        .setScale(Phaser.Math.FloatBetween(0.5, 1.2))
+        .setTint(isPurple ? 0xb026ff : 0x00f3ff)
+        .setAlpha(Phaser.Math.FloatBetween(0.3, 0.7))
         .setBlendMode(Phaser.BlendModes.ADD);
 
       this.emberParticles.push({
@@ -168,24 +171,24 @@ export class MainMenuScene extends Phaser.Scene {
     this.pedestalRing = this.add.graphics();
     this.heroCarContainer.add(this.pedestalRing);
 
-    // Neon floor underglow
+    // Neon floor underglow in Electric Cyan & Neon Purple
     const underglow = this.add.sprite(0, 0, 'glow_orb')
-      .setScale(2.2, 1.1)
-      .setTint(0xff5500)
+      .setScale(2.4, 1.2)
+      .setTint(0x00f3ff)
       .setAlpha(0.45)
       .setBlendMode(Phaser.BlendModes.ADD);
     this.heroCarContainer.add(underglow);
 
     // Car Shadow
-    const carShadow = this.add.ellipse(0, 8, 90, 140, 0x000000, 0.65);
+    const carShadow = this.add.ellipse(0, 8, 90, 140, 0x000000, 0.7);
     this.heroCarContainer.add(carShadow);
 
     // Hero Car Sprite
     const carSprite = this.add.sprite(0, 0, 'hero_car');
     this.heroCarContainer.add(carSprite);
 
-    // Tailpipe exhaust flame particles
-    const exhaustEmitterLeft = this.add.particles(carSprite.x - 13, carSprite.y + 64, 'particle_orange', {
+    // Tailpipe exhaust flame particles in Electric Cyan & Neon Purple
+    const exhaustEmitterLeft = this.add.particles(carSprite.x - 13, carSprite.y + 64, 'particle_blue', {
       speedY: { min: 40, max: 120 },
       speedX: { min: -10, max: 10 },
       scale: { start: 0.35, end: 0.05 },
@@ -194,7 +197,7 @@ export class MainMenuScene extends Phaser.Scene {
       frequency: 45,
       blendMode: 'ADD',
     });
-    const exhaustEmitterRight = this.add.particles(carSprite.x + 13, carSprite.y + 64, 'particle_orange', {
+    const exhaustEmitterRight = this.add.particles(carSprite.x + 13, carSprite.y + 64, 'particle_blue', {
       speedY: { min: 40, max: 120 },
       speedX: { min: -10, max: 10 },
       scale: { start: 0.35, end: 0.05 },
@@ -205,7 +208,7 @@ export class MainMenuScene extends Phaser.Scene {
     });
     this.heroCarContainer.add([exhaustEmitterLeft, exhaustEmitterRight]);
 
-    // Subtle engine idle bobbing tween
+    // Engine idle bobbing tween
     this.tweens.add({
       targets: carSprite,
       y: { from: -4, to: 4 },
@@ -217,32 +220,31 @@ export class MainMenuScene extends Phaser.Scene {
 
     // Holographic Telemetry HUD Cards around the car
     const telemetryBox = this.add.graphics();
-    telemetryBox.lineStyle(1, 0x00f0ff, 0.4);
-    telemetryBox.fillStyle(0x0a101f, 0.7);
+    telemetryBox.lineStyle(1.5, 0x00f3ff, 0.6);
+    telemetryBox.fillStyle(0x0a1020, 0.85);
     telemetryBox.strokeRoundedRect(centerX - 130, centerY + 115, 260, 68, 6);
     telemetryBox.fillRoundedRect(centerX - 130, centerY + 115, 260, 68, 6);
 
-    const vehicleTag = this.add.text(centerX, centerY + 130, 'VEHICLE // APEX-GT [CLASS S]', {
-      fontFamily: 'monospace',
+    // Subtle Purple Top-Bar
+    telemetryBox.fillStyle(0xb026ff, 0.25);
+    telemetryBox.fillRoundedRect(centerX - 129, centerY + 116, 258, 6, { tl: 5, tr: 5, bl: 0, br: 0 });
+
+    const vehicleTag = this.add.text(centerX, centerY + 132, 'VEHICLE // APEX-GT [CLASS S]', {
+      fontFamily: '"Consolas", monospace',
       fontSize: '12px',
-      color: '#00f0ff',
+      color: '#00f3ff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
 
     const statsTag = this.add.text(centerX, centerY + 155, 'TOP SPEED: 340 KM/H • NITRO: 100% READY', {
-      fontFamily: 'monospace',
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
       color: '#94a3b8',
     }).setOrigin(0.5);
 
-    // Decorative cyber corner ticks on telemetry box
-    const cornerTick = this.add.text(centerX + 115, centerY + 120, '◢', {
-      fontSize: '10px',
-      color: '#ff5500',
-    }).setOrigin(0.5);
-
     this.tweens.add({
-      targets: [vehicleTag, cornerTick, statsTag],
+      targets: [vehicleTag, statsTag],
       alpha: { from: 0.8, to: 1.0 },
       duration: 1200,
       yoyo: true,
@@ -258,13 +260,13 @@ export class MainMenuScene extends Phaser.Scene {
 
     // 1. Status Pill Tag
     const tagBg = this.add.graphics();
-    tagBg.fillStyle(0x00f0ff, 0.12);
-    tagBg.lineStyle(1, 0x00f0ff, 0.5);
+    tagBg.fillStyle(0x00f3ff, 0.1);
+    tagBg.lineStyle(1, 0x00f3ff, 0.6);
     tagBg.strokeRoundedRect(-170, -78, 340, 24, 4);
     tagBg.fillRoundedRect(-170, -78, 340, 24, 4);
     brandingGroup.add(tagBg);
 
-    const statusDot = this.add.circle(-150, -66, 4, 0x00f0ff);
+    const statusDot = this.add.circle(-150, -66, 4, 0x00f3ff);
     brandingGroup.add(statusDot);
     this.tweens.add({
       targets: statusDot,
@@ -276,33 +278,34 @@ export class MainMenuScene extends Phaser.Scene {
     });
 
     const tagText = this.add.text(-135, -66, 'SYSTEM ONLINE // REGION: GLOBAL GRID', {
-      fontFamily: 'monospace',
+      fontFamily: '"Consolas", monospace',
       fontSize: '10px',
-      color: '#00f0ff',
+      color: '#00f3ff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0, 0.5);
     brandingGroup.add(tagText);
 
     // 2. Main Title: NITRO RUSH
-    // Outer Glow / Shadow Text
+    // Outer Glow Text in Neon Purple / Cyan Dual-Tone
     const titleGlow = this.add.text(0, -10, 'NITRO RUSH', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
-      fontSize: '68px',
-      color: '#ff3300',
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '66px',
+      color: '#00f3ff',
       fontStyle: 'italic',
-      stroke: '#ff1100',
-      strokeThickness: 14,
+      stroke: '#b026ff',
+      strokeThickness: 12,
     }).setOrigin(0.5);
-    titleGlow.setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
+    titleGlow.setAlpha(0.65).setBlendMode(Phaser.BlendModes.ADD);
     brandingGroup.add(titleGlow);
 
     // Foreground High-Contrast Text
     const titleMain = this.add.text(0, -10, 'NITRO RUSH', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
-      fontSize: '68px',
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '66px',
       fontStyle: 'italic',
       color: '#ffffff',
-      stroke: '#080811',
+      stroke: '#050811',
       strokeThickness: 6,
     }).setOrigin(0.5);
     brandingGroup.add(titleMain);
@@ -317,13 +320,13 @@ export class MainMenuScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
-    // 3. Neon Divider Line with Animated Scanner Pulse
+    // 3. Neon Divider Line in Neon Purple with Electric Cyan Scanning Spark
     const divider = this.add.graphics();
-    divider.lineStyle(2, 0xff5500, 0.8);
+    divider.lineStyle(2, 0xb026ff, 0.9);
     divider.lineBetween(-170, 36, 170, 36);
     brandingGroup.add(divider);
 
-    const scannerSpark = this.add.circle(-170, 36, 4, 0x00f0ff);
+    const scannerSpark = this.add.circle(-170, 36, 4, 0x00f3ff);
     scannerSpark.setBlendMode(Phaser.BlendModes.ADD);
     brandingGroup.add(scannerSpark);
 
@@ -338,9 +341,9 @@ export class MainMenuScene extends Phaser.Scene {
 
     // 4. Subtitle: MULTIPLAYER ARCADE RACING
     const subtitle = this.add.text(0, 56, 'MULTIPLAYER ARCADE RACING', {
-      fontFamily: '"Segoe UI", Roboto, sans-serif',
+      fontFamily: '"Rajdhani", "Segoe UI", sans-serif',
       fontSize: '14px',
-      color: '#38bdf8',
+      color: '#00f3ff',
       letterSpacing: 4,
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -360,7 +363,7 @@ export class MainMenuScene extends Phaser.Scene {
       width: 320,
       height: 52,
       label: 'PLAY RACE',
-      icon: '▶',
+      icon: '►',
       isPrimary: true,
       onClick: () => this.handlePlayClick(),
     });
@@ -372,7 +375,7 @@ export class MainMenuScene extends Phaser.Scene {
       width: 320,
       height: 48,
       label: 'MULTIPLAYER',
-      icon: '🌐',
+      icon: '◈',
       isPrimary: false,
       onClick: () => this.handleMultiplayerClick(),
     });
@@ -384,7 +387,7 @@ export class MainMenuScene extends Phaser.Scene {
       width: 320,
       height: 48,
       label: 'GARAGE',
-      icon: '⛯',
+      icon: '⚙',
       isPrimary: false,
       onClick: () => this.handleGarageClick(),
     });
@@ -396,7 +399,7 @@ export class MainMenuScene extends Phaser.Scene {
       width: 320,
       height: 48,
       label: 'SETTINGS',
-      icon: '⚙',
+      icon: '☰',
       isPrimary: false,
       onClick: () => this.handleSettingsClick(),
     });
@@ -416,7 +419,7 @@ export class MainMenuScene extends Phaser.Scene {
     onClick: () => void;
   }): Phaser.GameObjects.Container {
     const { x, y, width, height, label, icon, isPrimary, onClick } = config;
-    const chamfer = 10;
+    const chamfer = 8;
     const container = this.add.container(x, y);
 
     const bgGraphics = this.add.graphics();
@@ -425,12 +428,13 @@ export class MainMenuScene extends Phaser.Scene {
     // Initial draw
     this.renderButtonShape(bgGraphics, width, height, chamfer, isPrimary, false);
 
-    // Button Text & Icon
-    const textColor = isPrimary ? '#ffffff' : '#e2e8f0';
+    // Button Text & Icon: Primary has dark bold text on electric cyan fill
+    const defaultTextColor = isPrimary ? '#050811' : '#ffffff';
     const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: isPrimary ? '20px' : '17px',
-      color: textColor,
+      fontFamily: '"Orbitron", "Impact", "Segoe UI", sans-serif',
+      fontSize: isPrimary ? '18px' : '15px',
+      color: defaultTextColor,
+      fontStyle: 'bold',
       letterSpacing: 2,
     };
 
@@ -455,13 +459,15 @@ export class MainMenuScene extends Phaser.Scene {
 
       this.tweens.add({
         targets: container,
-        scaleX: 1.05,
-        scaleY: 1.05,
-        duration: 160,
+        scaleX: 1.04,
+        scaleY: 1.04,
+        duration: 140,
         ease: 'Quad.easeOut',
       });
 
-      text.setColor(isPrimary ? '#ffffff' : '#00f0ff');
+      if (!isPrimary) {
+        text.setColor('#00f3ff');
+      }
     });
 
     // Pointer Out
@@ -472,11 +478,11 @@ export class MainMenuScene extends Phaser.Scene {
         targets: container,
         scaleX: 1.0,
         scaleY: 1.0,
-        duration: 160,
+        duration: 140,
         ease: 'Quad.easeOut',
       });
 
-      text.setColor(textColor);
+      text.setColor(defaultTextColor);
     });
 
     // Click Animation
@@ -486,9 +492,9 @@ export class MainMenuScene extends Phaser.Scene {
 
       this.tweens.add({
         targets: container,
-        scaleX: 0.96,
-        scaleY: 0.96,
-        duration: 80,
+        scaleX: 0.95,
+        scaleY: 0.95,
+        duration: 70,
         yoyo: true,
         onComplete: () => {
           this.triggerButtonSparks(container.x, container.y, isPrimary);
@@ -501,7 +507,7 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   /**
-   * Draws a futuristic chamfered rectangle button shape
+   * Draws a futuristic chamfered rectangle button shape in Electric Cyan / Neon Purple
    */
   private renderButtonShape(
     g: Phaser.GameObjects.Graphics,
@@ -516,13 +522,13 @@ export class MainMenuScene extends Phaser.Scene {
     const halfH = h / 2;
 
     const fillColor = isPrimary
-      ? isHovered ? 0xff4400 : 0xe63900
-      : isHovered ? 0x162238 : 0x0c1322;
-    const fillAlpha = isPrimary ? (isHovered ? 0.95 : 0.85) : (isHovered ? 0.9 : 0.7);
+      ? isHovered ? 0x38bdf8 : 0x00f3ff
+      : isHovered ? 0x142038 : 0x0c1426;
+    const fillAlpha = isPrimary ? (isHovered ? 1.0 : 0.95) : (isHovered ? 0.95 : 0.85);
 
     const borderColor = isPrimary
-      ? isHovered ? 0xffffff : 0xff7700
-      : isHovered ? 0x00f0ff : 0x334155;
+      ? 0xffffff
+      : isHovered ? 0xffffff : 0x00f3ff;
     const borderWidth = isHovered ? 2.5 : 1.5;
 
     // Chamfered Path
@@ -542,11 +548,11 @@ export class MainMenuScene extends Phaser.Scene {
     g.lineStyle(borderWidth, borderColor, 0.95);
     g.strokePath();
 
-    // Secondary decorative cyber corner notches
+    // Corner highlights on hover
     if (isHovered) {
-      g.lineStyle(3, isPrimary ? 0xffffff : 0x00f0ff, 1);
-      g.lineBetween(-halfW + 4, -halfH + 4, -halfW + 16, -halfH + 4);
-      g.lineBetween(halfW - 16, halfH - 4, halfW - 4, halfH - 4);
+      g.lineStyle(2, 0xffffff, 1);
+      g.lineBetween(-halfW + 4, -halfH + 4, -halfW + 14, -halfH + 4);
+      g.lineBetween(halfW - 14, halfH - 4, halfW - 4, halfH - 4);
     }
   }
 
@@ -554,7 +560,7 @@ export class MainMenuScene extends Phaser.Scene {
    * Particle burst when clicking a button
    */
   private triggerButtonSparks(x: number, y: number, isPrimary: boolean): void {
-    const texture = isPrimary ? 'particle_orange' : 'particle_blue';
+    const texture = isPrimary ? 'particle_cyan' : 'particle_purple';
     const emitter = this.add.particles(x, y, texture, {
       speed: { min: 80, max: 240 },
       angle: { min: 0, max: 360 },
@@ -576,17 +582,17 @@ export class MainMenuScene extends Phaser.Scene {
   private handlePlayClick(): void {
     SoundEffects.playNitroLaunch();
 
-    // Camera flash & minor shake
-    this.cameras.main.flash(200, 255, 80, 0);
+    // Camera flash in Electric Cyan
+    this.cameras.main.flash(200, 0, 243, 255);
     this.cameras.main.shake(200, 0.005);
 
-    // Large nitro burst at hero car
+    // Cyan/Purple nitro burst at hero car
     if (this.heroCarContainer) {
       this.triggerButtonSparks(this.heroCarContainer.x, this.heroCarContainer.y + 60, true);
     }
 
     this.time.delayedCall(220, () => {
-      this.cameras.main.fadeOut(250, 7, 10, 20);
+      this.cameras.main.fadeOut(250, 5, 8, 17);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         this.scene.start('TrackSelectScene');
       });
@@ -645,26 +651,30 @@ export class MainMenuScene extends Phaser.Scene {
     const frame = this.add.graphics();
     frame.fillStyle(0x0a1020, 0.98);
     frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
-    frame.lineStyle(2, 0x00f0ff, 0.9);
+    frame.lineStyle(2, 0x00f3ff, 0.85);
     frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
 
-    // Header bar
-    frame.fillStyle(0x00f0ff, 0.15);
+    // Glowing Neon Purple Accent Header
+    frame.fillStyle(0xb026ff, 0.2);
     frame.fillRoundedRect(-modalW / 2 + 2, -modalH / 2 + 2, modalW - 4, 46, { tl: 10, tr: 10, bl: 0, br: 0 });
+    frame.lineStyle(1.5, 0x00f3ff, 0.6);
+    frame.lineBetween(-modalW / 2 + 2, -modalH / 2 + 48, modalW / 2 - 2, -modalH / 2 + 48);
     this.modalContainer.add(frame);
 
-    const title = this.add.text(0, -modalH / 2 + 23, 'MULTIPLAYER RACING', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
+    const title = this.add.text(0, -modalH / 2 + 24, 'MULTIPLAYER RACING', {
+      fontFamily: '"Orbitron", "Impact", sans-serif',
       fontSize: '22px',
       color: '#ffffff',
       letterSpacing: 2,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const tag = this.add.text(0, -modalH / 2 + 56, '// SELECT MODE: GLOBAL QUEUE OR CUSTOM PRIVATE ROOM //', {
-      fontFamily: 'monospace',
+    const tag = this.add.text(0, -modalH / 2 + 58, '// SELECT MODE: GLOBAL QUEUE OR CUSTOM PRIVATE ROOM //', {
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
-      color: '#00f0ff',
+      color: '#00f3ff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
     this.modalContainer.add([title, tag]);
 
@@ -674,20 +684,21 @@ export class MainMenuScene extends Phaser.Scene {
     const qmY = -130;
     const qmH = 68;
     const qmBg = this.add.graphics();
-    qmBg.fillStyle(0x0e172a, 0.9);
+    qmBg.fillStyle(0x0e172a, 0.95);
     qmBg.fillRoundedRect(-cardW / 2, qmY - qmH / 2, cardW, qmH, 6);
-    qmBg.lineStyle(1, 0x1e293b, 0.9);
+    qmBg.lineStyle(1.5, 0x00f3ff, 0.6);
     qmBg.strokeRoundedRect(-cardW / 2, qmY - qmH / 2, cardW, qmH, 6);
     this.modalContainer.add(qmBg);
 
     const qmTitle = this.add.text(-cardW / 2 + 24, qmY - 14, '⚡ QUICK MATCH', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '18px',
-      color: '#00f0ff',
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '17px',
+      color: '#00f3ff',
       letterSpacing: 1,
+      fontStyle: 'bold',
     });
-    const qmDesc = this.add.text(-cardW / 2 + 24, qmY + 10, 'Find opponents in the global matchmaking queue (2-8 racers)', {
-      fontFamily: 'monospace',
+    const qmDesc = this.add.text(-cardW / 2 + 24, qmY + 11, 'Find opponents in the global matchmaking queue (2-8 racers)', {
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
       color: '#94a3b8',
     });
@@ -699,7 +710,7 @@ export class MainMenuScene extends Phaser.Scene {
       width: 140,
       height: 38,
       label: 'PLAY NOW',
-      icon: '▶',
+      icon: '►',
       isPrimary: true,
       onClick: () => this.launchMultiplayer({ mode: 'QUICK_MATCH' }),
     });
@@ -709,20 +720,21 @@ export class MainMenuScene extends Phaser.Scene {
     const crY = -48;
     const crH = 68;
     const crBg = this.add.graphics();
-    crBg.fillStyle(0x0e172a, 0.9);
+    crBg.fillStyle(0x0e172a, 0.95);
     crBg.fillRoundedRect(-cardW / 2, crY - crH / 2, cardW, crH, 6);
-    crBg.lineStyle(1, 0x1e293b, 0.9);
+    crBg.lineStyle(1.5, 0xb026ff, 0.6);
     crBg.strokeRoundedRect(-cardW / 2, crY - crH / 2, cardW, crH, 6);
     this.modalContainer.add(crBg);
 
     const crTitle = this.add.text(-cardW / 2 + 24, crY - 14, '👑 CREATE PRIVATE ROOM', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '18px',
-      color: '#fbbf24',
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '17px',
+      color: '#d8b4fe',
       letterSpacing: 1,
+      fontStyle: 'bold',
     });
-    const crDesc = this.add.text(-cardW / 2 + 24, crY + 10, 'Host a private lobby with a unique 6-character room code', {
-      fontFamily: 'monospace',
+    const crDesc = this.add.text(-cardW / 2 + 24, crY + 11, 'Host a private lobby with a unique 6-character room code', {
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
       color: '#94a3b8',
     });
@@ -744,20 +756,21 @@ export class MainMenuScene extends Phaser.Scene {
     const jrY = 55;
     const jrH = 105;
     const jrBg = this.add.graphics();
-    jrBg.fillStyle(0x0e172a, 0.9);
+    jrBg.fillStyle(0x0e172a, 0.95);
     jrBg.fillRoundedRect(-cardW / 2, jrY - jrH / 2, cardW, jrH, 6);
-    jrBg.lineStyle(1, 0x1e293b, 0.9);
+    jrBg.lineStyle(1.5, 0x00f3ff, 0.6);
     jrBg.strokeRoundedRect(-cardW / 2, jrY - jrH / 2, cardW, jrH, 6);
     this.modalContainer.add(jrBg);
 
     const jrTitle = this.add.text(-cardW / 2 + 24, jrY - 36, '🔑 JOIN WITH ROOM CODE', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '18px',
-      color: '#34d399',
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '17px',
+      color: '#00f3ff',
       letterSpacing: 1,
+      fontStyle: 'bold',
     });
     const jrDesc = this.add.text(-cardW / 2 + 24, jrY - 14, 'Type 6-character code (letters and digits, no 0/1/I/O):', {
-      fontFamily: 'monospace',
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
       color: '#94a3b8',
     });
@@ -778,7 +791,7 @@ export class MainMenuScene extends Phaser.Scene {
       const bx = startBoxesX + i * (boxSize + boxSpacing);
       const bg = this.add.graphics();
       const txt = this.add.text(bx, boxesY, '•', {
-        fontFamily: '"Impact", "Segoe UI", monospace',
+        fontFamily: '"Orbitron", monospace',
         fontSize: '20px',
         color: '#475569',
       }).setOrigin(0.5);
@@ -814,15 +827,15 @@ export class MainMenuScene extends Phaser.Scene {
         if (i < enteredCode.length) {
           bg.fillStyle(0x0f2438, 0.95);
           bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
-          bg.lineStyle(2, 0x00f0ff, 1);
+          bg.lineStyle(2, 0x00f3ff, 1);
           bg.strokeRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
-          txt.setText(enteredCode[i]).setColor('#00f0ff');
+          txt.setText(enteredCode[i]).setColor('#00f3ff');
         } else if (i === enteredCode.length) {
           bg.fillStyle(0x1e293b, 0.9);
           bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
-          bg.lineStyle(1.5, 0x38bdf8, 0.8);
+          bg.lineStyle(1.5, 0xb026ff, 0.9);
           bg.strokeRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
-          txt.setText('_').setColor('#38bdf8');
+          txt.setText('_').setColor('#b026ff');
         } else {
           bg.fillStyle(0x0f172a, 0.8);
           bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
@@ -938,27 +951,31 @@ export class MainMenuScene extends Phaser.Scene {
     const frame = this.add.graphics();
     frame.fillStyle(0x0a1020, 0.98);
     frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
-    frame.lineStyle(2, 0x00f0ff, 0.9);
+    frame.lineStyle(2, 0x00f3ff, 0.85);
     frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
 
-    // Decorative header bar
-    frame.fillStyle(0x00f0ff, 0.15);
+    // Glowing Neon Purple Accent Header
+    frame.fillStyle(0xb026ff, 0.2);
     frame.fillRoundedRect(-modalW / 2 + 2, -modalH / 2 + 2, modalW - 4, 46, { tl: 10, tr: 10, bl: 0, br: 0 });
+    frame.lineStyle(1.5, 0x00f3ff, 0.6);
+    frame.lineBetween(-modalW / 2 + 2, -modalH / 2 + 48, modalW / 2 - 2, -modalH / 2 + 48);
     this.modalContainer.add(frame);
 
-    const title = this.add.text(0, -modalH / 2 + 23, 'SYSTEM & AUDIO PREFERENCES', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
+    const title = this.add.text(0, -modalH / 2 + 24, 'SYSTEM & AUDIO PREFERENCES', {
+      fontFamily: '"Orbitron", "Impact", sans-serif',
+      fontSize: '20px',
       color: '#ffffff',
       letterSpacing: 2,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
     this.modalContainer.add(title);
 
     const tag = this.add.text(0, -modalH / 2 + 58, '// LOCAL STORAGE PERSISTENCE: nitro_rush_settings //', {
-      fontFamily: 'monospace',
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
-      color: '#00f0ff',
+      color: '#00f3ff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
     this.modalContainer.add(tag);
 
@@ -974,7 +991,7 @@ export class MainMenuScene extends Phaser.Scene {
         {
           label: 'PROCEDURAL SFX AUDIO',
           value: s.soundEnabled ? 'ENABLED' : 'MUTED',
-          color: s.soundEnabled ? '#10b981' : '#ef4444',
+          color: s.soundEnabled ? '#00ff9d' : '#ff0055',
           action: () => {
             settingsManager.setSoundEnabled(!s.soundEnabled);
             SoundEffects.playClick();
@@ -984,7 +1001,7 @@ export class MainMenuScene extends Phaser.Scene {
         {
           label: `MASTER AUDIO VOLUME (${Math.round(s.masterVolume * 100)}%)`,
           value: s.masterVolume <= 0 ? '0%' : `${Math.round(s.masterVolume * 100)}%`,
-          color: '#00f0ff',
+          color: '#00f3ff',
           isStepper: true,
           stepDown: () => {
             const next = Math.max(0, Math.round((s.masterVolume - 0.2) * 10) / 10);
@@ -1002,7 +1019,7 @@ export class MainMenuScene extends Phaser.Scene {
         {
           label: 'CAMERA NITRO SHAKE',
           value: s.screenShakeEnabled ? 'ENABLED' : 'DISABLED',
-          color: s.screenShakeEnabled ? '#10b981' : '#94a3b8',
+          color: s.screenShakeEnabled ? '#00ff9d' : '#94a3b8',
           action: () => {
             settingsManager.setScreenShake(!s.screenShakeEnabled);
             SoundEffects.playClick();
@@ -1012,7 +1029,7 @@ export class MainMenuScene extends Phaser.Scene {
         {
           label: 'WARP SPEED STREAKS',
           value: s.speedStreaksEnabled ? 'ENABLED' : 'DISABLED',
-          color: s.speedStreaksEnabled ? '#10b981' : '#94a3b8',
+          color: s.speedStreaksEnabled ? '#00ff9d' : '#94a3b8',
           action: () => {
             settingsManager.setSpeedStreaks(!s.speedStreaksEnabled);
             SoundEffects.playClick();
@@ -1022,7 +1039,7 @@ export class MainMenuScene extends Phaser.Scene {
         {
           label: 'RACE RADAR MINIMAP',
           value: s.minimapEnabled ? 'ENABLED' : 'DISABLED',
-          color: s.minimapEnabled ? '#10b981' : '#94a3b8',
+          color: s.minimapEnabled ? '#00ff9d' : '#94a3b8',
           action: () => {
             settingsManager.setMinimapEnabled(!s.minimapEnabled);
             SoundEffects.playClick();
@@ -1036,32 +1053,33 @@ export class MainMenuScene extends Phaser.Scene {
 
         // Row background
         const rowBg = this.add.graphics();
-        rowBg.fillStyle(0x0e172a, 0.85);
+        rowBg.fillStyle(0x0e172a, 0.9);
         rowBg.fillRoundedRect(-modalW / 2 + 25, ry, modalW - 50, 40, 4);
-        rowBg.lineStyle(1, 0x1e293b, 0.8);
+        rowBg.lineStyle(1, 0x00f3ff, 0.35);
         rowBg.strokeRoundedRect(-modalW / 2 + 25, ry, modalW - 50, 40, 4);
         rowsContainer.add(rowBg);
 
         const lbl = this.add.text(-modalW / 2 + 40, ry + 13, item.label, {
-          fontFamily: 'monospace',
-          fontSize: '12px',
+          fontFamily: '"Consolas", monospace',
+          fontSize: '11px',
           color: '#e2e8f0',
           fontStyle: 'bold',
+          letterSpacing: 1,
         });
         rowsContainer.add(lbl);
 
         if (item.isStepper) {
           // Down button
           const btnDown = this.add.text(modalW / 2 - 135, ry + 10, '◄', {
-            fontFamily: 'monospace',
+            fontFamily: '"Consolas", monospace',
             fontSize: '15px',
-            color: '#00f0ff',
+            color: '#00f3ff',
             fontStyle: 'bold',
           }).setInteractive({ useHandCursor: true });
           btnDown.on('pointerdown', item.stepDown);
 
           const valText = this.add.text(modalW / 2 - 95, ry + 12, item.value, {
-            fontFamily: 'monospace',
+            fontFamily: '"Consolas", monospace',
             fontSize: '12px',
             color: '#ffffff',
             fontStyle: 'bold',
@@ -1069,9 +1087,9 @@ export class MainMenuScene extends Phaser.Scene {
 
           // Up button
           const btnUp = this.add.text(modalW / 2 - 55, ry + 10, '►', {
-            fontFamily: 'monospace',
+            fontFamily: '"Consolas", monospace',
             fontSize: '15px',
-            color: '#00f0ff',
+            color: '#00f3ff',
             fontStyle: 'bold',
           }).setInteractive({ useHandCursor: true });
           btnUp.on('pointerdown', item.stepUp);
@@ -1080,14 +1098,15 @@ export class MainMenuScene extends Phaser.Scene {
         } else {
           const btn = this.add.container(modalW / 2 - 80, ry + 20);
           const btnBg = this.add.graphics();
-          btnBg.fillStyle(0x1e293b, 1);
+          const isEnabled = item.value === 'ENABLED';
+          btnBg.fillStyle(isEnabled ? 0x022c22 : 0x1e293b, 1);
           btnBg.fillRoundedRect(-45, -12, 90, 24, 3);
-          btnBg.lineStyle(1, item.value === 'ENABLED' ? 0x10b981 : 0x475569, 1);
+          btnBg.lineStyle(1.5, isEnabled ? 0x00ff9d : 0x475569, 1);
           btnBg.strokeRoundedRect(-45, -12, 90, 24, 3);
           btn.add(btnBg);
 
           const btnText = this.add.text(0, 0, item.value, {
-            fontFamily: 'monospace',
+            fontFamily: '"Consolas", monospace',
             fontSize: '10px',
             color: item.color,
             fontStyle: 'bold',
@@ -1182,16 +1201,18 @@ export class MainMenuScene extends Phaser.Scene {
   private createFooter(width: number, height: number): void {
     const footerY = height - 22;
 
-    this.add.text(40, footerY, 'NITRO RUSH • V0.2.0 PROTOTYPE • ARCADE ENGINE', {
-      fontFamily: 'monospace',
+    this.add.text(40, footerY, 'NITRO RUSH • V0.2.0 • NEON CYBERPUNK ENGINE', {
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
       color: '#475569',
+      letterSpacing: 1,
     }).setOrigin(0, 0.5);
 
     this.add.text(width - 40, footerY, '[ESC] DISMISS • [CLICK] INTERACT', {
-      fontFamily: 'monospace',
+      fontFamily: '"Consolas", monospace',
       fontSize: '11px',
-      color: '#475569',
+      color: '#00f3ff',
+      letterSpacing: 1,
     }).setOrigin(1, 0.5);
   }
 
@@ -1205,7 +1226,7 @@ export class MainMenuScene extends Phaser.Scene {
     // 0. Animate Scrolling Background Cyber Grid
     if (this.backgroundGrid) {
       this.backgroundGrid.clear();
-      this.backgroundGrid.lineStyle(1, 0x00f0ff, 0.06);
+      this.backgroundGrid.lineStyle(1, 0x00f3ff, 0.06);
 
       const lineSpacing = 48;
       this.gridScrollY = (this.gridScrollY + dt * 100) % lineSpacing;
@@ -1242,17 +1263,17 @@ export class MainMenuScene extends Phaser.Scene {
       }
     }
 
-    // 3. Animate Pedestal Turntable Ring
+    // 3. Animate Pedestal Turntable Ring with Neon Purple & Electric Cyan
     if (this.pedestalRing) {
       this.gridOffsetY = (this.gridOffsetY + dt * 1.5) % (Math.PI * 2);
       this.pedestalRing.clear();
 
-      // Outer turntable ellipse
-      this.pedestalRing.lineStyle(2, 0xff5500, 0.7);
+      // Outer turntable ellipse in Neon Purple
+      this.pedestalRing.lineStyle(2, 0xb026ff, 0.85);
       this.pedestalRing.strokeEllipse(0, 0, 220, 100);
 
-      // Inner turntable ellipse
-      this.pedestalRing.lineStyle(1, 0x00f0ff, 0.5);
+      // Inner turntable ellipse in Electric Cyan
+      this.pedestalRing.lineStyle(1.5, 0x00f3ff, 0.7);
       this.pedestalRing.strokeEllipse(0, 0, 170, 75);
 
       // Rotating tick marks along turntable perimeter
@@ -1261,7 +1282,7 @@ export class MainMenuScene extends Phaser.Scene {
         const angle = (t / tickCount) * Math.PI * 2 + this.gridOffsetY;
         const tx = Math.cos(angle) * 110;
         const ty = Math.sin(angle) * 50;
-        this.pedestalRing.fillStyle(t % 2 === 0 ? 0xff5500 : 0x00f0ff, 0.8);
+        this.pedestalRing.fillStyle(t % 2 === 0 ? 0xb026ff : 0x00f3ff, 0.9);
         this.pedestalRing.fillCircle(tx, ty, 2.5);
       }
     }

@@ -15,6 +15,7 @@ import { TRACKS, type TrackConfig } from '../data/TrackData';
 import { CarController, type CarInputState } from '../game/CarController';
 import { CircuitTrack } from '../game/CircuitTrack';
 import { SoundEffects } from '../utils/SoundEffects';
+import { CYBER_THEME } from '../utils/UIHelpers';
 import { networkManager } from '../multiplayer/NetworkManager';
 import {
   MessageType,
@@ -256,21 +257,21 @@ export class MultiplayerRaceScene extends Phaser.Scene {
     this.countdownContainer = this.add.container(width / 2, height / 2).setDepth(210).setScrollFactor(0);
 
     const title = this.add.text(0, -90, 'NITRO RUSH // GRID LOCKED', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '14px',
-      color: '#00f0ff',
+      color: CYBER_THEME.CYAN_HEX,
       letterSpacing: 3,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.countdownContainer.add(title);
 
     this.countdownText = this.add.text(0, 10, '3', {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
       fontSize: '120px',
-      color: '#ef4444',
-      stroke: '#080c18',
+      color: CYBER_THEME.CRIMSON_HEX,
+      stroke: CYBER_THEME.BG_DARK_HEX,
       strokeThickness: 12,
-      fontStyle: 'italic',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
     this.countdownContainer.add(this.countdownText);
 
@@ -285,15 +286,15 @@ export class MultiplayerRaceScene extends Phaser.Scene {
         if (!this.countdownText) return;
 
         if (count === 2) {
-          this.countdownText.setText('2').setColor('#f97316');
+          this.countdownText.setText('2').setColor(CYBER_THEME.PURPLE_HEX);
           SoundEffects.playCountdownBeep(false);
         } else if (count === 1) {
-          this.countdownText.setText('1').setColor('#eab308');
+          this.countdownText.setText('1').setColor(CYBER_THEME.CYAN_HEX);
           SoundEffects.playCountdownBeep(false);
         } else if (count === 0) {
-          this.countdownText.setText('GO!').setColor('#10b981');
+          this.countdownText.setText('GO!').setColor(CYBER_THEME.EMERALD_HEX);
           SoundEffects.playCountdownBeep(true);
-          this.cameras.main.flash(250, 16, 185, 129);
+          this.cameras.main.flash(250, 0, 255, 157);
         }
       },
     });

@@ -38,7 +38,7 @@ import {
 import { CARS } from '../data/CarData';
 import { TRACKS } from '../data/TrackData';
 import { SoundEffects } from '../utils/SoundEffects';
-import { UIHelpers } from '../utils/UIHelpers';
+import { UIHelpers, CYBER_THEME } from '../utils/UIHelpers';
 import { type MultiplayerRaceLaunchData } from './MultiplayerRaceScene';
 
 export interface MultiplayerLobbyLaunchData {
@@ -185,26 +185,36 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
   private createBackground(width: number, height: number): void {
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x060811, 0x060811, 0x0c1322, 0x090c1a, 1);
+    bg.fillGradientStyle(CYBER_THEME.BG_DARK, CYBER_THEME.BG_DARK, 0x0c1322, 0x070b16, 1);
     bg.fillRect(0, 0, width, height);
 
-    // Ambient glow orbs
+    // Subtle cyber grid lines
+    bg.lineStyle(1, CYBER_THEME.CYAN, 0.04);
+    const gridSize = 40;
+    for (let x = 0; x <= width; x += gridSize) {
+      bg.lineBetween(x, 0, x, height);
+    }
+    for (let y = 0; y <= height; y += gridSize) {
+      bg.lineBetween(0, y, width, y);
+    }
+
+    // Ambient glow orbs (Electric Cyan & Neon Purple)
     const cyanGlow = this.add.sprite(width * 0.15, height * 0.2, 'glow_orb')
-      .setScale(3.0)
+      .setScale(3.2)
       .setAlpha(0.18)
-      .setTint(0x00f0ff)
+      .setTint(CYBER_THEME.CYAN)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    const orangeGlow = this.add.sprite(width * 0.85, height * 0.8, 'glow_orb')
+    const purpleGlow = this.add.sprite(width * 0.85, height * 0.8, 'glow_orb')
       .setScale(3.5)
       .setAlpha(0.2)
-      .setTint(0xff5500)
+      .setTint(CYBER_THEME.PURPLE)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.tweens.add({
-      targets: [cyanGlow, orangeGlow],
-      alpha: { from: 0.12, to: 0.24 },
-      duration: 3000,
+      targets: [cyanGlow, purpleGlow],
+      alpha: { from: 0.12, to: 0.25 },
+      duration: 3200,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
@@ -215,10 +225,14 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     this.headerContainer = this.add.container(0, 0).setDepth(20);
 
     const barBg = this.add.graphics();
-    barBg.fillStyle(0x090d1a, 0.95);
+    barBg.fillStyle(CYBER_THEME.BG_NAVY, 0.95);
     barBg.fillRect(0, 0, width, 56);
-    barBg.lineStyle(1, 0x00f0ff, 0.4);
+    barBg.lineStyle(1, CYBER_THEME.CYAN, 0.4);
     barBg.lineBetween(0, 56, width, 56);
+
+    // Purple scanner line
+    barBg.lineStyle(1.5, CYBER_THEME.PURPLE, 0.7);
+    barBg.lineBetween(width * 0.25, 56, width * 0.75, 56);
     this.headerContainer.add(barBg);
 
     // Leave Button (Left)
@@ -230,24 +244,25 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       height: 36,
       label: 'LEAVE',
       icon: '◄',
-      isPrimary: false,
+      variant: 'secondary',
       onClick: () => this.handleLeaveLobby(),
     });
     this.headerContainer.add(leaveBtn);
 
     // Title & Room ID (Center)
     const titleText = this.add.text(width / 2, 20, 'NITRO RUSH // MULTIPLAYER LOBBY', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '20px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '17px',
       color: '#ffffff',
       letterSpacing: 2,
     }).setOrigin(0.5);
 
     this.roomInfoText = this.add.text(width / 2, 40, 'CONNECTING TO GAME SERVER...', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
 
     this.headerContainer.add([titleText, this.roomInfoText]);
@@ -261,7 +276,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       height: 32,
       label: 'COPY CODE',
       icon: '📋',
-      isPrimary: false,
+      variant: 'purple',
       onClick: () => this.copyRoomCodeToClipboard(),
     });
     this.copyCodeBtnContainer = copyBtn;
@@ -273,17 +288,17 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     const pillY = 28;
 
     const pillBg = this.add.graphics();
-    pillBg.fillStyle(0x0f172a, 0.8);
-    pillBg.lineStyle(1, 0x334155, 0.8);
+    pillBg.fillStyle(0x0f172a, 0.85);
+    pillBg.lineStyle(1, 0x1e293b, 0.8);
     pillBg.strokeRoundedRect(pillX - 90, pillY - 14, 180, 28, 4);
     pillBg.fillRoundedRect(pillX - 90, pillY - 14, 180, 28, 4);
     this.headerContainer.add(pillBg);
 
-    this.statusPillDot = this.add.circle(pillX - 74, pillY, 4, 0xf59e0b);
+    this.statusPillDot = this.add.circle(pillX - 74, pillY, 4, CYBER_THEME.AMBER);
     this.statusPillText = this.add.text(pillX - 60, pillY, 'CONNECTING', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
-      color: '#f59e0b',
+      color: CYBER_THEME.AMBER_HEX,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
 
@@ -312,22 +327,23 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
       // Slot badge
       const slotBadge = this.add.text(-cardW / 2 + 12, -cardH / 2 + 10, slotNum, {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '16px',
+        fontFamily: CYBER_THEME.FONT_MONO,
+        fontSize: '14px',
         color: '#64748b',
+        fontStyle: 'bold',
       });
 
       // Driver name
       const nameText = this.add.text(-cardW / 2 + 42, -cardH / 2 + 10, '[EMPTY SLOT]', {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '15px',
+        fontFamily: CYBER_THEME.FONT_DISPLAY,
+        fontSize: '13px',
         color: '#475569',
         letterSpacing: 1,
       });
 
       // Car name
       const carText = this.add.text(-cardW / 2 + 12, 4, 'WAITING FOR RACER...', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '11px',
         color: '#475569',
       });
@@ -335,7 +351,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       // Status badge graphics & text
       const statusBg = this.add.graphics();
       const statusBadge = this.add.text(cardW / 2 - 14, cardH / 2 - 16, 'OPEN', {
-        fontFamily: 'monospace',
+        fontFamily: CYBER_THEME.FONT_MONO,
         fontSize: '10px',
         color: '#475569',
         fontStyle: 'bold',
@@ -387,24 +403,33 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     }
 
     // Occupied slot styling
-    const bgFill = isLocal ? 0x0f2438 : 0x0d1527;
-    const borderColor = isLocal ? 0x00f0ff : (player.isReady ? 0x10b981 : 0x334155);
+    const bgFill = isLocal ? 0x0f2444 : CYBER_THEME.BG_GLASS;
+    const borderColor = isLocal ? CYBER_THEME.CYAN : (player.isReady ? CYBER_THEME.EMERALD : 0x1e293b);
 
-    ui.bg.fillStyle(bgFill, 0.9);
+    ui.bg.fillStyle(bgFill, 0.92);
     ui.bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-    ui.bg.lineStyle(isLocal ? 2 : 1, borderColor, isLocal ? 0.9 : 0.7);
+    ui.bg.lineStyle(isLocal ? 2 : 1, borderColor, isLocal ? 1 : 0.7);
     ui.bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+
+    if (isLocal) {
+      // Glowing Neon Purple corner ticks on local slot
+      ui.bg.fillStyle(CYBER_THEME.PURPLE, 1);
+      ui.bg.fillRect(-cardW / 2, -cardH / 2, 7, 2);
+      ui.bg.fillRect(-cardW / 2, -cardH / 2, 2, 7);
+      ui.bg.fillRect(cardW / 2 - 7, cardH / 2 - 2, 7, 2);
+      ui.bg.fillRect(cardW / 2 - 2, cardH / 2 - 7, 2, 7);
+    }
 
     // Slot badge
     const isRoomHost = this.isPrivateRoom && (
       (this.hostPlayerId && player.id === this.hostPlayerId) ||
       (!this.hostPlayerId && index === 0)
     );
-    const badgeColor = isRoomHost ? '#ffaa00' : (index === 0 ? '#ffaa00' : (isLocal ? '#00f0ff' : '#94a3b8'));
-    ui.slotBadge.setText(isRoomHost ? `P${index + 1} 👑` : (index === 0 ? 'P1 ★' : `P${index + 1}`)).setColor(badgeColor);
+    const badgeColor = isRoomHost ? '#d946ef' : (index === 0 ? '#00f3ff' : (isLocal ? '#00f0ff' : '#94a3b8'));
+    ui.slotBadge.setText(isRoomHost ? `P${index + 1} [HOST]` : `P${index + 1}`).setColor(badgeColor);
 
     // Driver name
-    const hostTag = isRoomHost ? ' 👑 HOST' : '';
+    const hostTag = isRoomHost ? ' [HOST]' : '';
     const displayName = isLocal ? `${player.name} (YOU)${hostTag}` : `${player.name}${hostTag}`;
     ui.nameText.setText(displayName).setColor(isLocal ? '#ffffff' : '#cbd5e1');
 
@@ -414,19 +439,19 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
     // Status badge (READY or SELECTING)
     if (player.isReady) {
-      ui.statusBg.fillStyle(0x064e3b, 0.9);
+      ui.statusBg.fillStyle(0x022c22, 0.95);
       ui.statusBg.fillRoundedRect(cardW / 2 - 76, cardH / 2 - 26, 66, 18, 3);
-      ui.statusBg.lineStyle(1, 0x10b981, 0.9);
+      ui.statusBg.lineStyle(1, CYBER_THEME.EMERALD, 0.9);
       ui.statusBg.strokeRoundedRect(cardW / 2 - 76, cardH / 2 - 26, 66, 18, 3);
 
-      ui.statusBadge.setText('✓ READY').setColor('#10b981');
+      ui.statusBadge.setText('✓ READY').setColor('#00ff9d');
     } else {
-      ui.statusBg.fillStyle(0x451a03, 0.8);
+      ui.statusBg.fillStyle(0x142038, 0.9);
       ui.statusBg.fillRoundedRect(cardW / 2 - 86, cardH / 2 - 26, 76, 18, 3);
-      ui.statusBg.lineStyle(1, 0xf59e0b, 0.8);
+      ui.statusBg.lineStyle(1, CYBER_THEME.CYAN, 0.7);
       ui.statusBg.strokeRoundedRect(cardW / 2 - 86, cardH / 2 - 26, 76, 18, 3);
 
-      ui.statusBadge.setText('SELECTING').setColor('#f59e0b');
+      ui.statusBadge.setText('SELECTING').setColor('#38bdf8');
     }
   }
 
@@ -461,17 +486,21 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
     // Panel frame
     const frame = this.add.graphics();
-    frame.fillStyle(0x080c17, 0.9);
-    frame.fillRoundedRect(40, panelY, width - 80, 140, 8);
-    frame.lineStyle(1, 0x1e293b, 0.8);
-    frame.strokeRoundedRect(40, panelY, width - 80, 140, 8);
+    UIHelpers.drawGlassPanel(frame, 40, panelY, width - 80, 140, {
+      borderColor: 0x1e293b,
+      borderAlpha: 0.8,
+      fillColor: CYBER_THEME.BG_NAVY,
+      fillAlpha: 0.92,
+      headerHeight: 32,
+      headerColor: CYBER_THEME.CYAN,
+    });
 
     // Section 1: Track Preview & Info (Left Column)
     const trackColX = 170;
     const trackColY = panelY + 28;
 
     this.add.text(trackColX, trackColY, 'CIRCUIT SELECTION', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       letterSpacing: 1,
@@ -479,14 +508,14 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
     const currentTrack = TRACKS.find((t) => t.id === this.currentTrackId) || TRACKS[0];
     this.trackNameText = this.add.text(trackColX, trackColY + 30, currentTrack.name.toUpperCase(), {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
       color: '#00f0ff',
       letterSpacing: 1,
     }).setOrigin(0.5);
 
-    this.add.text(trackColX, trackColY + 58, `3 LAPS • ${currentTrack.environment.toUpperCase()}`, {
-      fontFamily: 'monospace',
+    this.add.text(trackColX, trackColY + 58, `3 LAPS // ${currentTrack.environment.toUpperCase()}`, {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#64748b',
     }).setOrigin(0.5);
@@ -496,7 +525,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     const carColY = panelY + 28;
 
     this.add.text(carColX, carColY, 'SELECT YOUR VEHICLE', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#94a3b8',
       letterSpacing: 1,
@@ -517,8 +546,8 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       btnContainer.add(bg);
 
       const label = this.add.text(0, 0, car.name.toUpperCase(), {
-        fontFamily: '"Impact", "Segoe UI", sans-serif',
-        fontSize: '14px',
+        fontFamily: CYBER_THEME.FONT_DISPLAY,
+        fontSize: '12px',
         color: '#ffffff',
         letterSpacing: 1,
       }).setOrigin(0.5);
@@ -550,9 +579,9 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     this.readyButtonContainer.add(this.readyButtonBg);
 
     this.readyButtonText = this.add.text(0, 0, 'READY UP', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
-      color: '#ffffff',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
+      color: '#050811',
       letterSpacing: 2,
     }).setOrigin(0.5);
     this.readyButtonContainer.add(this.readyButtonText);
@@ -576,8 +605,8 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     this.hostStartButtonContainer.add(this.hostStartButtonBg);
 
     this.hostStartButtonText = this.add.text(0, 0, 'START RACE', {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '20px',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '16px',
       color: '#ffffff',
       letterSpacing: 2,
     }).setOrigin(0.5);
@@ -596,7 +625,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
     // Non-host status text
     this.hostStatusText = this.add.text(readyX, panelY + 95, 'WAITING FOR HOST TO START...', {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#00f0ff',
       fontStyle: 'bold',
@@ -608,8 +637,8 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     this.updateHostStartButtonUI();
 
     // Footer Help Bar
-    this.add.text(width / 2, height - 16, '[ESC] LEAVE LOBBY  •  [SPACE] TOGGLE READY  •  ROOM CAPACITY: 8 RACERS', {
-      fontFamily: 'monospace',
+    this.add.text(width / 2, height - 16, '[ESC] LEAVE LOBBY  |  [SPACE] TOGGLE READY  |  ROOM CAPACITY: 8 RACERS', {
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '11px',
       color: '#475569',
     }).setOrigin(0.5);
@@ -624,14 +653,21 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       btn.bg.clear();
 
       if (isSelected) {
-        btn.bg.fillStyle(0x00f0ff, 0.25);
+        btn.bg.fillStyle(0x0f2444, 0.95);
         btn.bg.fillRoundedRect(-carBtnW / 2, -carBtnH / 2, carBtnW, carBtnH, 4);
-        btn.bg.lineStyle(2, 0x00f0ff, 0.95);
+        btn.bg.lineStyle(2, CYBER_THEME.CYAN, 1);
         btn.bg.strokeRoundedRect(-carBtnW / 2, -carBtnH / 2, carBtnW, carBtnH, 4);
+
+        // Neon Purple corner ticks
+        btn.bg.fillStyle(CYBER_THEME.PURPLE, 1);
+        btn.bg.fillRect(-carBtnW / 2, -carBtnH / 2, 6, 2);
+        btn.bg.fillRect(-carBtnW / 2, -carBtnH / 2, 2, 6);
+        btn.bg.fillRect(carBtnW / 2 - 6, carBtnH / 2 - 2, 6, 2);
+        btn.bg.fillRect(carBtnW / 2 - 2, carBtnH / 2 - 6, 2, 6);
       } else {
-        btn.bg.fillStyle(0x0f172a, 0.7);
+        btn.bg.fillStyle(CYBER_THEME.BG_GLASS, 0.85);
         btn.bg.fillRoundedRect(-carBtnW / 2, -carBtnH / 2, carBtnW, carBtnH, 4);
-        btn.bg.lineStyle(1, 0x334155, 0.7);
+        btn.bg.lineStyle(1, 0x1e293b, 0.7);
         btn.bg.strokeRoundedRect(-carBtnW / 2, -carBtnH / 2, carBtnW, carBtnH, 4);
       }
     });
@@ -656,23 +692,23 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     }
 
     if (this.isLocalReady) {
-      // Amber Cancel Ready state
-      this.readyButtonBg.fillStyle(0xd97706, 0.95);
+      // Emerald Cancel Ready state
+      this.readyButtonBg.fillStyle(0x022c22, 0.95);
       this.readyButtonBg.fillRoundedRect(-rBtnW / 2, -rBtnH / 2, rBtnW, rBtnH, 6);
-      this.readyButtonBg.lineStyle(2, 0xfbbf24, 1);
+      this.readyButtonBg.lineStyle(2, CYBER_THEME.EMERALD, 1);
       this.readyButtonBg.strokeRoundedRect(-rBtnW / 2, -rBtnH / 2, rBtnW, rBtnH, 6);
 
       this.readyButtonText.setText('CANCEL READY');
-      this.readyButtonText.setColor('#ffffff');
+      this.readyButtonText.setColor('#00ff9d');
     } else {
-      // Emerald Ready Up state
-      this.readyButtonBg.fillStyle(0x059669, 0.95);
+      // Primary Electric Cyan Ready Up state
+      this.readyButtonBg.fillStyle(CYBER_THEME.CYAN, 0.95);
       this.readyButtonBg.fillRoundedRect(-rBtnW / 2, -rBtnH / 2, rBtnW, rBtnH, 6);
-      this.readyButtonBg.lineStyle(2, 0x34d399, 1);
+      this.readyButtonBg.lineStyle(2, 0xffffff, 1);
       this.readyButtonBg.strokeRoundedRect(-rBtnW / 2, -rBtnH / 2, rBtnW, rBtnH, 6);
 
       this.readyButtonText.setText('READY UP');
-      this.readyButtonText.setColor('#ffffff');
+      this.readyButtonText.setColor('#050811');
     }
   }
 
@@ -701,12 +737,12 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
 
       this.hostStartButtonBg?.clear();
       if (canStart) {
-        this.hostStartButtonBg?.fillStyle(0x059669, 0.95);
+        this.hostStartButtonBg?.fillStyle(CYBER_THEME.PURPLE, 0.95);
         this.hostStartButtonBg?.fillRoundedRect(-rBtnW / 2, -23, rBtnW, 46, 6);
-        this.hostStartButtonBg?.lineStyle(2, 0x34d399, 1);
+        this.hostStartButtonBg?.lineStyle(2, CYBER_THEME.PURPLE_LIGHT, 1);
         this.hostStartButtonBg?.strokeRoundedRect(-rBtnW / 2, -23, rBtnW, 46, 6);
 
-        this.hostStartButtonText?.setText('START RACE');
+        this.hostStartButtonText?.setText('START RACE ►');
         this.hostStartButtonText?.setColor('#ffffff');
       } else {
         this.hostStartButtonBg?.fillStyle(0x1e293b, 0.85);
@@ -1363,21 +1399,21 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     const modalW = 500;
     const modalH = 240;
     const frame = this.add.graphics();
-    frame.fillStyle(0x0c1322, 0.98);
+    frame.fillStyle(CYBER_THEME.BG_NAVY, 0.98);
     frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 8);
-    frame.lineStyle(2, 0xef4444, 0.9);
+    frame.lineStyle(2, CYBER_THEME.CRIMSON, 0.95);
     frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 8);
     this.errorModalContainer.add(frame);
 
     const title = this.add.text(0, -modalH / 2 + 36, titleStr, {
-      fontFamily: '"Impact", "Segoe UI", sans-serif',
-      fontSize: '22px',
-      color: '#ef4444',
+      fontFamily: CYBER_THEME.FONT_DISPLAY,
+      fontSize: '18px',
+      color: CYBER_THEME.CRIMSON_HEX,
       letterSpacing: 2,
     }).setOrigin(0.5);
 
     const desc = this.add.text(0, -10, messageStr, {
-      fontFamily: 'monospace',
+      fontFamily: CYBER_THEME.FONT_MONO,
       fontSize: '12px',
       color: '#cbd5e1',
       align: 'center',
@@ -1385,7 +1421,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.errorModalContainer.add([title, desc]);
 
-    // Retry Button
+    // Retry Button (Primary Electric Cyan)
     const retryBtn = UIHelpers.createCyberButton({
       scene: this,
       x: -80,
@@ -1394,8 +1430,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       height: 40,
       label: 'RETRY',
       icon: '↻',
-      isPrimary: true,
-      accentColor: 0x00f0ff,
+      variant: 'primary',
       onClick: () => {
         if (this.errorModalContainer) {
           this.errorModalContainer.destroy();
@@ -1405,7 +1440,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       },
     });
 
-    // Exit Button
+    // Exit Button (Secondary)
     const exitBtn = UIHelpers.createCyberButton({
       scene: this,
       x: 80,
@@ -1414,7 +1449,7 @@ export class MultiplayerLobbyScene extends Phaser.Scene {
       height: 40,
       label: 'MAIN MENU',
       icon: '◄',
-      isPrimary: false,
+      variant: 'secondary',
       onClick: () => {
         if (this.errorModalContainer) {
           this.errorModalContainer.destroy();
