@@ -22,5 +22,13 @@ public enum ErrorCode {
     INVALID_INPUT_VALUES,
     ROOM_ALREADY_CLOSED,
     INVALID_RECONNECT_TOKEN,
-    INTERNAL_ERROR
+    INVALID_ROOM_CODE,
+    NOT_ROOM_HOST,
+    NOT_ENOUGH_PLAYERS,
+    PLAYERS_NOT_READY,
+    INTERNAL_ERROR;
+
+    public String getCode() {
+        return name();
+    }
 }

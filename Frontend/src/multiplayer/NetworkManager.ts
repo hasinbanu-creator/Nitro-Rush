@@ -59,6 +59,7 @@ export class NetworkManager {
   // Metrics
   private currentRttMs: number = 0;
   private smoothedRttMs: number = 0;
+  private rttJitterMs: number = 0;
   private lastPingSentAt: number = 0;
 
   // Session data
@@ -279,6 +280,67 @@ export class NetworkManager {
     });
   }
 
+  /**
+   * Enqueues into global matchmaking or enters an explicit room.
+   */
+  public joinMatchmaking(options: { preferredTrackId?: string; preferredCarId?: string; roomId?: string } = {}): boolean {
+    return this.send(MessageType.JOIN_MATCHMAKING, {
+      preferredTrackId: options.preferredTrackId || 'coastal-rush',
+      preferredCarId: options.preferredCarId || 'bolt-gt',
+      roomId: options.roomId,
+    });
+  }
+
+  /**
+   * Cancels matchmaking queue participation or leaves active room.
+   */
+  public cancelMatchmaking(roomId?: string): boolean {
+    return this.send(MessageType.CANCEL_MATCHMAKING, {
+      roomId,
+    });
+  }
+
+  /**
+   * Creates a private multiplayer room.
+   */
+  public createPrivateRoom(options: { preferredTrackId?: string; preferredCarId?: string } = {}): boolean {
+    return this.send(MessageType.CREATE_PRIVATE_ROOM, {
+      preferredTrackId: options.preferredTrackId || 'coastal-rush',
+      preferredCarId: options.preferredCarId || 'bolt-gt',
+    });
+  }
+
+  /**
+   * Joins a private multiplayer room by code.
+   */
+  public joinPrivateRoom(roomCode: string, preferredCarId: string = 'bolt-gt'): boolean {
+    const cleanCode = (roomCode || '').trim().toUpperCase();
+    return this.send(MessageType.JOIN_PRIVATE_ROOM, {
+      roomCode: cleanCode,
+      preferredCarId,
+    });
+  }
+
+  /**
+   * Leaves a private multiplayer room.
+   */
+  public leavePrivateRoom(options: { roomCode?: string; roomId?: string } = {}): boolean {
+    return this.send(MessageType.LEAVE_PRIVATE_ROOM, {
+      roomCode: options.roomCode,
+      roomId: options.roomId,
+    });
+  }
+
+  /**
+   * Host starts the private race once all players are ready.
+   */
+  public startPrivateRace(options: { roomCode?: string; roomId?: string } = {}): boolean {
+    return this.send(MessageType.START_PRIVATE_RACE, {
+      roomCode: options.roomCode,
+      roomId: options.roomId,
+    });
+  }
+
   // ==========================================================================
   // Messaging & Envelope Transmission
   // ==========================================================================
@@ -392,6 +454,12 @@ export class NetworkManager {
         this.emitError(errPayload.errorCode || 'SERVER_ERROR', errPayload.message || 'Server reported an error');
         break;
       }
+
+      case MessageType.PRIVATE_ROOM_ERROR: {
+        const errPayload = envelope.payload as any;
+        this.emitError(errPayload?.errorCode || 'PRIVATE_ROOM_ERROR', errPayload?.message || 'Private room error');
+        break;
+      }
     }
 
     // Dispatch to registered type-specific listeners
@@ -455,7 +523,10 @@ export class NetworkManager {
     // Exponential moving average (weight 0.25 to new sample)
     if (this.smoothedRttMs === 0) {
       this.smoothedRttMs = roundTripTime;
+      this.rttJitterMs = 0;
     } else {
+      const diff = Math.abs(roundTripTime - this.smoothedRttMs);
+      this.rttJitterMs = Math.round(this.rttJitterMs * 0.75 + diff * 0.25);
       this.smoothedRttMs = Math.round(this.smoothedRttMs * 0.75 + roundTripTime * 0.25);
     }
 
@@ -603,19 +674,65 @@ export class NetworkManager {
     this.authPromiseReject = null;
   }
 
-  private getDefaultWebSocketUrl(): string {
-    if (typeof (import.meta as any)?.env?.VITE_WS_URL === 'string' && (import.meta as any).env.VITE_WS_URL) {
-      return (import.meta as any).env.VITE_WS_URL;
+  /**
+   * Resolves the default WebSocket endpoint URL with auto-detection for
+   * development, production reverse proxies (port 80/443), and custom ports.
+   *
+   * Rules:
+   * 1. If explicit envWsUrl or VITE_WS_URL is provided, use it.
+   * 2. If in browser:
+   *    - protocol: 'wss:' if https:, else 'ws:'
+   *    - if local dev host ('localhost' or '127.0.0.1') on Vite dev port ('5173'):
+   *        use `${protocol}//${host}:8080/ws/game` (connects to local backend)
+   *    - if port is default ('', '80', '443'):
+   *        use `${protocol}//${host}/ws/game` (clean reverse proxy URL without hardcoded 8080)
+   *    - if custom port (e.g. '3000', '8443'):
+   *        use `${protocol}//${host}:${port}/ws/game`
+   * 3. Fallback: 'ws://localhost:8080/ws/game'
+   */
+  public static resolveDefaultWebSocketUrl(
+    loc?: { protocol?: string; hostname?: string; port?: string } | null,
+    envWsUrl?: string | null
+  ): string {
+    // 1. Support explicit environment variable in Vite builds (production deployment)
+    if (envWsUrl && envWsUrl.trim() !== '') {
+      return envWsUrl.trim();
     }
-    if (typeof window !== 'undefined' && (window as any).__NITRO_WS_URL__) {
-      return (window as any).__NITRO_WS_URL__;
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_WS_URL) {
+      const viteEnvUrl = import.meta.env.VITE_WS_URL.trim();
+      if (viteEnvUrl !== '') {
+        return viteEnvUrl;
+      }
     }
-    if (typeof window !== 'undefined' && window.location) {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname || 'localhost';
-      return `${protocol}//${host}:8080/ws/game`;
+
+    // 2. Browser runtime auto-detection
+    const location = loc !== undefined ? loc : (typeof window !== 'undefined' ? window.location : null);
+    if (location) {
+      const isHttps = location.protocol === 'https:';
+      const protocol = isHttps ? 'wss:' : 'ws:';
+      const host = location.hostname || 'localhost';
+      const port = location.port ? String(location.port).trim() : '';
+
+      // Local development workflow: Vite dev server on port 5173 connects to local backend on 8080
+      const isLocalDevHost = host === 'localhost' || host === '127.0.0.1';
+      if (isLocalDevHost && port === '5173') {
+        return `${protocol}//${host}:8080/ws/game`;
+      }
+
+      // Default ports (80 for HTTP, 443 for HTTPS) or empty port (production reverse proxy like Nginx)
+      if (port === '' || port === '80' || port === '443') {
+        return `${protocol}//${host}/ws/game`;
+      }
+
+      // Custom non-default port preserved
+      return `${protocol}//${host}:${port}/ws/game`;
     }
+
     return 'ws://localhost:8080/ws/game';
+  }
+
+  private getDefaultWebSocketUrl(): string {
+    return NetworkManager.resolveDefaultWebSocketUrl();
   }
 
   // ==========================================================================
@@ -646,10 +763,11 @@ export class NetworkManager {
     return this.currentGuestToken;
   }
 
-  public getLatency(): { currentRttMs: number; smoothedRttMs: number } {
+  public getLatency(): { currentRttMs: number; smoothedRttMs: number; rttJitterMs: number } {
     return {
       currentRttMs: this.currentRttMs,
       smoothedRttMs: this.smoothedRttMs,
+      rttJitterMs: this.rttJitterMs,
     };
   }
 

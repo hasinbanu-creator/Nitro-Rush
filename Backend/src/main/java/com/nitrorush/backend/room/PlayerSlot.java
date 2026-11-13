@@ -3,12 +3,17 @@ package com.nitrorush.backend.room;
 import com.nitrorush.backend.physics.model.PlayerInput;
 import com.nitrorush.backend.protocol.payload.PlayerSlotInfo;
 
+import java.util.UUID;
+
 /**
  * Encapsulates an assigned player slot inside a multiplayer room.
+ * Maintains strict separation between transient room simulation identity (playerId "p1", slotId "P1")
+ * and permanent database identity (persistentPlayerId UUID).
  */
 public class PlayerSlot {
 
     private final String playerId;
+    private final UUID persistentPlayerId;
     private final String guestToken;
     private final String displayName;
     private final String slotId;
@@ -24,7 +29,8 @@ public class PlayerSlot {
     private volatile long lastAckInputSeq = 0;
     private volatile PlayerInput latestInput = PlayerInput.neutral();
 
-    public PlayerSlot(String playerId, String guestToken, String displayName, String slotId, int slotIndex, String initialCarId, String sessionId) {
+    public PlayerSlot(String playerId, String guestToken, String displayName, String slotId, int slotIndex,
+                      String initialCarId, String sessionId, UUID persistentPlayerId) {
         this.playerId = playerId;
         this.guestToken = guestToken;
         this.displayName = displayName;
@@ -34,9 +40,16 @@ public class PlayerSlot {
             this.carId = initialCarId;
         }
         this.sessionId = sessionId;
+        this.persistentPlayerId = persistentPlayerId;
+    }
+
+    public PlayerSlot(String playerId, String guestToken, String displayName, String slotId, int slotIndex,
+                      String initialCarId, String sessionId) {
+        this(playerId, guestToken, displayName, slotId, slotIndex, initialCarId, sessionId, null);
     }
 
     public String getPlayerId() { return playerId; }
+    public UUID getPersistentPlayerId() { return persistentPlayerId; }
     public String getGuestToken() { return guestToken; }
     public String getDisplayName() { return displayName; }
     public String getSlotId() { return slotId; }

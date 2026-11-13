@@ -52,6 +52,11 @@ public class Room {
     private volatile RoomState state = RoomState.WAITING;
     private final long createdAtMs;
 
+    private volatile boolean isPrivate = false;
+    private volatile String roomCode = null;
+    private volatile String hostGuestToken = null;
+    private volatile String hostPlayerId = null;
+
     private final List<PlayerSlot> playerSlots = new CopyOnWriteArrayList<>();
     private final Map<String, PlayerSlot> playersByToken = new ConcurrentHashMap<>();
     private final Map<String, PlayerSlot> playersById = new ConcurrentHashMap<>();
@@ -103,6 +108,18 @@ public class Room {
     public int getPlayerCount() { return playerSlots.size(); }
     public List<PlayerSlot> getPlayerSlots() { return Collections.unmodifiableList(playerSlots); }
 
+    public boolean isPrivate() { return isPrivate; }
+    public void setPrivate(boolean isPrivate) { this.isPrivate = isPrivate; }
+
+    public String getRoomCode() { return roomCode; }
+    public void setRoomCode(String roomCode) { this.roomCode = roomCode; }
+
+    public String getHostGuestToken() { return hostGuestToken; }
+    public void setHostGuestToken(String hostGuestToken) { this.hostGuestToken = hostGuestToken; }
+
+    public String getHostPlayerId() { return hostPlayerId; }
+    public void setHostPlayerId(String hostPlayerId) { this.hostPlayerId = hostPlayerId; }
+
     // ==========================================
     // Player Join / Leave / Lobby Operations
     // ==========================================
@@ -141,11 +158,16 @@ public class Room {
                     : "bolt-gt";
 
             PlayerSlot newSlot = new PlayerSlot(
-                    playerId, guestToken, guest.getDisplayName(), slotId, slotIndex, selectedCar, sessionId);
+                    playerId, guestToken, guest.getDisplayName(), slotId, slotIndex, selectedCar, sessionId, guest.getPlayerId());
 
             playerSlots.add(newSlot);
             playersByToken.put(guestToken, newSlot);
             playersById.put(playerId, newSlot);
+
+            if (this.hostGuestToken == null) {
+                this.hostGuestToken = guestToken;
+                this.hostPlayerId = playerId;
+            }
 
             log.info("Player {} joined room {} as {} (car: {})", guest.getDisplayName(), roomId, slotId, selectedCar);
 
@@ -171,6 +193,10 @@ public class Room {
 
             // Check if immediate start condition reached (8 players joined)
             checkLobbyTransitions(timeProvider.currentTimeMillis());
+
+            if (isPrivate) {
+                broadcastPrivateRoomUpdated();
+            }
 
             return newSlot;
         }
@@ -199,11 +225,29 @@ public class Room {
                 }
             }
 
+            // Transfer host to next connected player if leaving player was host
+            if (guestToken.equals(hostGuestToken)) {
+                PlayerSlot nextHost = playerSlots.stream().filter(PlayerSlot::isConnected).findFirst().orElse(null);
+                if (nextHost != null) {
+                    this.hostGuestToken = nextHost.getGuestToken();
+                    this.hostPlayerId = nextHost.getPlayerId();
+                    log.info("Host transferred to {} ({}) in room {}", nextHost.getDisplayName(), nextHost.getPlayerId(), roomId);
+                } else {
+                    this.hostGuestToken = null;
+                    this.hostPlayerId = null;
+                }
+            }
+
             if (playerSlots.isEmpty()) {
                 state = RoomState.CLOSED;
                 log.info("Room {} is now CLOSED (all players left)", roomId);
-            } else if (state == RoomState.WAITING) {
-                checkLobbyTransitions(timeProvider.currentTimeMillis());
+            } else {
+                if (!isPrivate && state == RoomState.WAITING) {
+                    checkLobbyTransitions(timeProvider.currentTimeMillis());
+                }
+                if (isPrivate) {
+                    broadcastPrivateRoomUpdated();
+                }
             }
 
             return true;
@@ -229,6 +273,9 @@ public class Room {
 
             // Broadcast status update
             broadcastPlayerReadyStatus(slot);
+            if (isPrivate) {
+                broadcastPrivateRoomUpdated();
+            }
         }
     }
 
@@ -247,7 +294,11 @@ public class Room {
             log.info("Player {} in room {} ready={}", slot.getDisplayName(), roomId, isReady);
 
             broadcastPlayerReadyStatus(slot);
-            checkLobbyTransitions(timeProvider.currentTimeMillis());
+            if (!isPrivate) {
+                checkLobbyTransitions(timeProvider.currentTimeMillis());
+            } else {
+                broadcastPrivateRoomUpdated();
+            }
         }
     }
 
@@ -269,7 +320,7 @@ public class Room {
     // ==========================================
 
     private void checkLobbyTransitions(long nowMs) {
-        if (state != RoomState.WAITING) {
+        if (state != RoomState.WAITING || isPrivate) {
             return;
         }
 
@@ -351,6 +402,64 @@ public class Room {
         }
     }
 
+    public void startPrivateRace(String requestingGuestToken, long nowMs) {
+        synchronized (stateLock) {
+            if (!isPrivate) {
+                throw new ProtocolException(ErrorCode.ROOM_STATE_INVALID, "Room is not a private room");
+            }
+            if (state != RoomState.WAITING) {
+                throw new ProtocolException(ErrorCode.ROOM_STATE_INVALID, "Race cannot be started in state: " + state);
+            }
+            if (hostGuestToken == null || !hostGuestToken.equals(requestingGuestToken)) {
+                throw new ProtocolException(ErrorCode.NOT_ROOM_HOST, "Only the room host can start the race");
+            }
+            if (playerSlots.size() < MIN_PLAYERS_TO_START) {
+                throw new ProtocolException(ErrorCode.NOT_ENOUGH_PLAYERS,
+                        "At least " + MIN_PLAYERS_TO_START + " players are required to start the race");
+            }
+            for (PlayerSlot slot : playerSlots) {
+                if (!slot.isReady()) {
+                    throw new ProtocolException(ErrorCode.PLAYERS_NOT_READY,
+                            "Cannot start race: player " + slot.getDisplayName() + " is not ready");
+                }
+            }
+
+            startCountdown(nowMs);
+        }
+    }
+
+    public void broadcastPrivateRoomUpdated() {
+        if (!isPrivate) return;
+
+        List<PlayerSlotInfo> slotInfos = new ArrayList<>();
+        int readyCount = 0;
+        for (PlayerSlot slot : playerSlots) {
+            slotInfos.add(slot.toSlotInfo());
+            if (slot.isReady()) {
+                readyCount++;
+            }
+        }
+        boolean allReady = !playerSlots.isEmpty() && readyCount == playerSlots.size();
+
+        PrivateRoomUpdatedPayload payload = new PrivateRoomUpdatedPayload(
+                roomCode,
+                roomId,
+                hostPlayerId,
+                slotInfos,
+                allReady,
+                readyCount,
+                playerSlots.size()
+        );
+        MessageEnvelope<PrivateRoomUpdatedPayload> envelope =
+                MessageEnvelope.of(MessageType.PRIVATE_ROOM_UPDATED, payload);
+
+        for (PlayerSlot slot : playerSlots) {
+            if (slot.isConnected() && slot.getSessionId() != null) {
+                broadcaster.sendToSession(slot.getSessionId(), envelope);
+            }
+        }
+    }
+
     private void startRace(long nowMs) {
         synchronized (stateLock) {
             if (state != RoomState.COUNTDOWN) {
@@ -417,6 +526,13 @@ public class Room {
         synchronized (stateLock) {
             switch (state) {
                 case WAITING -> {
+                    if (isPrivate) {
+                        if (playerSlots.isEmpty()) {
+                            state = RoomState.CLOSED;
+                        }
+                        break;
+                    }
+
                     // Check 15s collection timer
                     if (readyCountdownStartedAtMs > 0 && (nowMs - readyCountdownStartedAtMs >= READY_COLLECTION_WINDOW_MS)) {
                         int readyCount = 0;
@@ -599,10 +715,9 @@ public class Room {
             long seq = payload.getSequenceNumber();
             if (seq > slot.getLastAckInputSeq()) {
                 slot.setLastAckInputSeq(seq);
+                PlayerInput sanitized = new PlayerInput(throttle, brake, steer, drift, nitro);
+                slot.setLatestInput(sanitized);
             }
-
-            PlayerInput sanitized = new PlayerInput(throttle, brake, steer, drift, nitro);
-            slot.setLatestInput(sanitized);
         }
     }
 

@@ -42,7 +42,9 @@ class GameWebSocketHandlerTest {
         com.nitrorush.backend.common.SystemTimeProvider timeProvider = new com.nitrorush.backend.common.SystemTimeProvider();
         com.nitrorush.backend.room.WebSocketMessageBroadcaster broadcaster = new com.nitrorush.backend.room.WebSocketMessageBroadcaster(connectionManager);
         roomManager = new com.nitrorush.backend.room.RoomManager(trackRegistry, timeProvider, broadcaster);
-        handler = new GameWebSocketHandler(connectionManager, guestSessionManager, roomManager, properties, objectMapper);
+        com.nitrorush.backend.matchmaking.MatchmakingService matchmakingService =
+                new com.nitrorush.backend.matchmaking.MatchmakingService(roomManager, timeProvider, broadcaster);
+        handler = new GameWebSocketHandler(connectionManager, guestSessionManager, roomManager, matchmakingService, properties, objectMapper);
     }
 
     private WebSocketSession createMockSession(String sessionId) {

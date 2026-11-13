@@ -39,7 +39,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .addInterceptors(handshakeInterceptor);
 
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
-            registration.setAllowedOrigins(allowedOrigins.toArray(new String[0]));
+            if (allowedOrigins.contains("*")) {
+                registration.setAllowedOriginPatterns("*");
+            } else {
+                registration.setAllowedOrigins(allowedOrigins.toArray(new String[0]));
+            }
         } else {
             registration.setAllowedOrigins("http://localhost:5173", "http://127.0.0.1:5173");
         }

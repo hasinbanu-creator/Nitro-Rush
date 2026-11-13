@@ -1,0 +1,27 @@
+[Unit]
+Description=Nitro Rush Authoritative 20 TPS Game Server
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=nitrorush
+Group=nitrorush
+WorkingDirectory=/opt/nitro-rush/backend
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError -jar /opt/nitro-rush/backend/backend-0.0.1-SNAPSHOT.jar
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nitro-rush-backend
+Environment=PORT=8080
+Environment=SPRING_PROFILES_ACTIVE=prod
+
+# Security Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+

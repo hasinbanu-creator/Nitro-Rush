@@ -302,14 +302,31 @@ export class MultiplayerHUDAdapter {
     this.container.add(this.minimapContainer);
   }
 
-  public startRaceTimer(): void {
+  public startRaceTimer(initialTimeMs: number = 0): void {
     this.isRaceActive = true;
-    this.raceElapsedTimeMs = 0;
+    this.raceElapsedTimeMs = initialTimeMs;
   }
 
-  public update(dt: number, speedKMH: number, nitro: number, isReversing: boolean): void {
+  public getRaceElapsedTimeMs(): number {
+    return this.raceElapsedTimeMs;
+  }
+
+  public update(
+    dt: number,
+    speedKMH: number,
+    nitro: number,
+    isReversing: boolean,
+    serverRaceTimeMs?: number
+  ): void {
     if (this.isRaceActive) {
-      this.raceElapsedTimeMs += dt * 1000;
+      if (serverRaceTimeMs !== undefined && serverRaceTimeMs >= 0) {
+        // Authoritative server-synchronized race time (monotonically non-decreasing)
+        if (serverRaceTimeMs >= this.raceElapsedTimeMs) {
+          this.raceElapsedTimeMs = serverRaceTimeMs;
+        }
+      } else {
+        this.raceElapsedTimeMs += dt * 1000;
+      }
       this.currentLapTimerText.setText(`TIME: ${formatLapTime(this.raceElapsedTimeMs)}`);
     }
 

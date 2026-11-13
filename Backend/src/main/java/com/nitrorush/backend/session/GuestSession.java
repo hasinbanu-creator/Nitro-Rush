@@ -2,28 +2,40 @@ package com.nitrorush.backend.session;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
- * In-memory representation of an authenticated guest user session.
+ * In-memory representation of an authenticated guest user session,
+ * linking transient session state with permanent PostgreSQL player identity.
  */
 public class GuestSession {
 
     private final String guestToken;
+    private final UUID playerId;
     private volatile String displayName;
     private volatile String avatarId;
     private final Instant createdAt;
     private volatile Instant lastActiveAt;
 
-    public GuestSession(String guestToken, String displayName, String avatarId) {
+    public GuestSession(String guestToken, String displayName, String avatarId, UUID playerId) {
         this.guestToken = Objects.requireNonNull(guestToken, "guestToken cannot be null");
         this.displayName = Objects.requireNonNull(displayName, "displayName cannot be null");
         this.avatarId = avatarId;
+        this.playerId = Objects.requireNonNull(playerId, "playerId cannot be null");
         this.createdAt = Instant.now();
         this.lastActiveAt = this.createdAt;
     }
 
+    public GuestSession(String guestToken, String displayName, String avatarId) {
+        this(guestToken, displayName, avatarId, UUID.randomUUID());
+    }
+
     public String getGuestToken() {
         return guestToken;
+    }
+
+    public UUID getPlayerId() {
+        return playerId;
     }
 
     public String getDisplayName() {
@@ -70,10 +82,10 @@ public class GuestSession {
     public String toString() {
         return "GuestSession{" +
                 "guestToken='" + GuestSessionManager.maskToken(guestToken) + '\'' +
+                ", playerId=" + playerId +
                 ", displayName='" + displayName + '\'' +
                 ", createdAt=" + createdAt +
                 ", lastActiveAt=" + lastActiveAt +
                 '}';
     }
 }
-

@@ -12,6 +12,7 @@ import type { VehicleTelemetry } from './ProtocolTypes.ts';
 export interface TimestampedSnapshot {
   telemetry: VehicleTelemetry;
   serverTimeMs: number;
+  localArrivalTimeMs?: number;
 }
 
 export interface InterpolatedVehicleState {
@@ -30,26 +31,112 @@ export interface InterpolatedVehicleState {
   isExtrapolated: boolean;
 }
 
+export interface SnapshotInterpolatorOptions {
+  interpolationDelayMs?: number;
+  initialDelayMs?: number;
+  maxExtrapolationMs?: number;
+  minDelayMs?: number;
+  maxDelayMs?: number;
+  adaptive?: boolean;
+  jitterMultiplier?: number;
+  growthRatePerSec?: number;
+  shrinkRatePerSec?: number;
+}
+
 export class SnapshotInterpolator {
   private snapshots: TimestampedSnapshot[] = [];
-  public interpolationDelayMs: number = 100; // 2 ticks at 20 Hz
-  public maxExtrapolationMs: number = 250;   // 5 ticks cap
 
-  constructor(options?: { interpolationDelayMs?: number; maxExtrapolationMs?: number }) {
-    if (options?.interpolationDelayMs !== undefined) {
-      this.interpolationDelayMs = options.interpolationDelayMs;
+  // Jitter Buffer Configuration & Bounds
+  public static readonly DEFAULT_MIN_DELAY_MS: number = 60;
+  public static readonly DEFAULT_MAX_DELAY_MS: number = 250;
+  public static readonly DEFAULT_INITIAL_DELAY_MS: number = 100;
+
+  public minDelayMs: number = SnapshotInterpolator.DEFAULT_MIN_DELAY_MS;
+  public maxDelayMs: number = SnapshotInterpolator.DEFAULT_MAX_DELAY_MS;
+  public initialDelayMs: number = SnapshotInterpolator.DEFAULT_INITIAL_DELAY_MS;
+  public maxExtrapolationMs: number = 250;   // 5 ticks cap
+  public adaptive: boolean = true;
+  public jitterMultiplier: number = 2.0;
+  public growthRatePerSec: number = 60; // ms/s slew rate for buffer expansion
+  public shrinkRatePerSec: number = 15; // ms/s slew rate for buffer contraction
+
+  // Dynamic Delay State
+  public interpolationDelayMs: number = SnapshotInterpolator.DEFAULT_INITIAL_DELAY_MS;
+  private currentDelayMs: number = SnapshotInterpolator.DEFAULT_INITIAL_DELAY_MS;
+  private targetDelayMs: number = SnapshotInterpolator.DEFAULT_INITIAL_DELAY_MS;
+
+  // Arrival & Jitter Measurement State
+  private smoothedJitterMs: number = 0;
+  private lastLocalArrivalTimeMs: number | null = null;
+  private lastServerTimeMs: number | null = null;
+  private arrivalCount: number = 0;
+  private lastSampleTimeMs: number | null = null;
+  private currentRttMs: number = 0;
+  private smoothedRttMs: number = 0;
+
+  // Monotonic client-to-server time offset mapping (serverTime - clientArrival)
+  private serverTimeOffset: number | null = null;
+
+  constructor(options?: SnapshotInterpolatorOptions) {
+    const initialDelay = options?.initialDelayMs ?? options?.interpolationDelayMs;
+    if (initialDelay !== undefined) {
+      this.initialDelayMs = initialDelay;
+      this.interpolationDelayMs = initialDelay;
+      this.currentDelayMs = initialDelay;
+      this.targetDelayMs = initialDelay;
     }
     if (options?.maxExtrapolationMs !== undefined) {
       this.maxExtrapolationMs = options.maxExtrapolationMs;
+    }
+    if (options?.minDelayMs !== undefined) {
+      this.minDelayMs = options.minDelayMs;
+    }
+    if (options?.maxDelayMs !== undefined) {
+      this.maxDelayMs = options.maxDelayMs;
+    }
+    if (options?.adaptive !== undefined) {
+      this.adaptive = options.adaptive;
+    }
+    if (options?.jitterMultiplier !== undefined) {
+      this.jitterMultiplier = options.jitterMultiplier;
+    }
+    if (options?.growthRatePerSec !== undefined) {
+      this.growthRatePerSec = options.growthRatePerSec;
+    }
+    if (options?.shrinkRatePerSec !== undefined) {
+      this.shrinkRatePerSec = options.shrinkRatePerSec;
     }
   }
 
   /**
    * Pushes a new telemetry snapshot from a RACE_STATE broadcast.
-   * Maintains chronological ordering and purges snapshots older than 2 seconds.
+   * Maintains chronological ordering, synchronizes the server-to-client timebase mapping,
+   * measures inter-arrival jitter, and purges snapshots older than 2 seconds.
    */
-  public pushSnapshot(telemetry: VehicleTelemetry, serverTimeMs: number): void {
-    const entry: TimestampedSnapshot = { telemetry, serverTimeMs };
+  public pushSnapshot(
+    telemetry: VehicleTelemetry,
+    serverTimeMs: number,
+    localArrivalTimeMs?: number
+  ): void {
+    const entry: TimestampedSnapshot = { telemetry, serverTimeMs, localArrivalTimeMs };
+
+    // Update server-to-client time mapping if local arrival time is provided
+    if (localArrivalTimeMs !== undefined) {
+      const instantaneousOffset = serverTimeMs - localArrivalTimeMs;
+      if (this.serverTimeOffset === null) {
+        // Initial clock synchronization on first snapshot arrival
+        this.serverTimeOffset = instantaneousOffset;
+      } else {
+        const delta = instantaneousOffset - this.serverTimeOffset;
+        if (Math.abs(delta) > 200) {
+          // Large timing irregularity (e.g. initial connection hitch, GC stall, tab backgrounded) -> snap
+          this.serverTimeOffset = instantaneousOffset;
+        } else {
+          // Smooth network arrival jitter via EMA filter (10% weight)
+          this.serverTimeOffset += delta * 0.1;
+        }
+      }
+    }
 
     // Ignore duplicate or out-of-order snapshots
     if (this.snapshots.length > 0) {
@@ -63,6 +150,27 @@ export class SnapshotInterpolator {
       }
     }
 
+    // Measure inter-arrival jitter (RFC 3550 transit delay variance)
+    if (localArrivalTimeMs !== undefined) {
+      if (this.lastLocalArrivalTimeMs !== null && this.lastServerTimeMs !== null) {
+        const deltaArrival = localArrivalTimeMs - this.lastLocalArrivalTimeMs;
+        const deltaServer = serverTimeMs - this.lastServerTimeMs;
+        const transitDiff = deltaArrival - deltaServer;
+        const instantaneousJitter = Math.abs(transitDiff);
+
+        if (this.arrivalCount === 0) {
+          this.smoothedJitterMs = instantaneousJitter;
+        } else {
+          // RFC 3550 EMA filter with 1/8 (0.125) smoothing weight
+          this.smoothedJitterMs += (instantaneousJitter - this.smoothedJitterMs) * 0.125;
+        }
+      }
+      this.lastLocalArrivalTimeMs = localArrivalTimeMs;
+      this.lastServerTimeMs = serverTimeMs;
+      this.arrivalCount++;
+      this.recalculateTargetDelay();
+    }
+
     this.snapshots.push(entry);
 
     // Evict snapshots older than 2 seconds before the latest
@@ -73,15 +181,54 @@ export class SnapshotInterpolator {
   }
 
   /**
-   * Samples the interpolated vehicle state at the specified client display timestamp.
-   * Applies the configured interpolation delay buffer (t_render = clientNowMs - delay).
+   * Recalculates target interpolation delay using smoothed jitter and network RTT.
+   * Requires at least 5 snapshot arrivals before adapting away from initialDelayMs.
    */
-  public sample(renderTimeMs: number): InterpolatedVehicleState | null {
+  private recalculateTargetDelay(): void {
+    if (!this.adaptive || this.arrivalCount < 5) {
+      this.targetDelayMs = this.initialDelayMs;
+      return;
+    }
+
+    // Base delay is 1 server tick (50ms)
+    // Add jitter multiplier * smoothedJitterMs
+    // Add fractional contribution for RTT when exceeding standard 60ms LAN threshold
+    const rttBuffer = this.smoothedRttMs > 60 ? Math.min(60, (this.smoothedRttMs - 60) * 0.25) : 0;
+    const computedTarget = 50 + this.jitterMultiplier * this.smoothedJitterMs + rttBuffer;
+
+    this.targetDelayMs = Math.max(this.minDelayMs, Math.min(this.maxDelayMs, computedTarget));
+  }
+
+  /**
+   * Samples the interpolated vehicle state at the specified timestamp.
+   * If an arrival-based server time offset is active and isServerTime is false, maps
+   * client monotonic render time into estimated server time prior to applying interpolation delay.
+   */
+  public sample(renderTimeMs: number, isServerTime: boolean = false): InterpolatedVehicleState | null {
     if (this.snapshots.length === 0) {
       return null;
     }
 
-    const targetTime = renderTimeMs - this.interpolationDelayMs;
+    // Smoothly slew currentDelayMs towards targetDelayMs without visual snapping
+    if (this.adaptive) {
+      const dtSec = this.lastSampleTimeMs !== null
+        ? Math.max(0, Math.min(0.1, (renderTimeMs - this.lastSampleTimeMs) / 1000))
+        : 0.016;
+      this.lastSampleTimeMs = renderTimeMs;
+
+      if (this.currentDelayMs < this.targetDelayMs) {
+        // Growth (expansion rate limited to growthRatePerSec, default 60 ms/s)
+        this.currentDelayMs = Math.min(this.targetDelayMs, this.currentDelayMs + this.growthRatePerSec * dtSec);
+      } else if (this.currentDelayMs > this.targetDelayMs) {
+        // Contraction (decay rate limited to shrinkRatePerSec, default 15 ms/s)
+        this.currentDelayMs = Math.max(this.targetDelayMs, this.currentDelayMs - this.shrinkRatePerSec * dtSec);
+      }
+      this.interpolationDelayMs = this.currentDelayMs;
+    }
+
+    const targetTime = (isServerTime || this.serverTimeOffset === null)
+      ? renderTimeMs - this.interpolationDelayMs
+      : (renderTimeMs + this.serverTimeOffset) - this.interpolationDelayMs;
 
     // Single snapshot: return directly
     if (this.snapshots.length === 1) {
@@ -222,8 +369,65 @@ export class SnapshotInterpolator {
     return this.snapshots.length;
   }
 
+  public getServerTimeOffset(): number | null {
+    return this.serverTimeOffset;
+  }
+
+  public setServerTimeOffset(offset: number | null): void {
+    this.serverTimeOffset = offset;
+  }
+
+  public clientToEstimatedServerTime(clientMonotonicMs: number): number {
+    if (this.serverTimeOffset === null) {
+      return clientMonotonicMs;
+    }
+    return clientMonotonicMs + this.serverTimeOffset;
+  }
+
+  public updateRtt(rttMs: number, smoothedRttMs?: number): void {
+    this.currentRttMs = Math.max(0, rttMs);
+    this.smoothedRttMs = smoothedRttMs !== undefined ? Math.max(0, smoothedRttMs) : this.currentRttMs;
+    this.recalculateTargetDelay();
+  }
+
+  public getJitterMetrics(): {
+    smoothedJitterMs: number;
+    targetDelayMs: number;
+    currentDelayMs: number;
+    arrivalCount: number;
+    minDelayMs: number;
+    maxDelayMs: number;
+  } {
+    return {
+      smoothedJitterMs: this.smoothedJitterMs,
+      targetDelayMs: this.targetDelayMs,
+      currentDelayMs: this.currentDelayMs,
+      arrivalCount: this.arrivalCount,
+      minDelayMs: this.minDelayMs,
+      maxDelayMs: this.maxDelayMs,
+    };
+  }
+
+  public setAdaptive(enabled: boolean): void {
+    this.adaptive = enabled;
+    if (!enabled) {
+      this.currentDelayMs = this.initialDelayMs;
+      this.targetDelayMs = this.initialDelayMs;
+      this.interpolationDelayMs = this.initialDelayMs;
+    }
+  }
+
   public clear(): void {
     this.snapshots = [];
+    this.serverTimeOffset = null;
+    this.currentDelayMs = this.initialDelayMs;
+    this.targetDelayMs = this.initialDelayMs;
+    this.interpolationDelayMs = this.initialDelayMs;
+    this.smoothedJitterMs = 0;
+    this.lastLocalArrivalTimeMs = null;
+    this.lastServerTimeMs = null;
+    this.arrivalCount = 0;
+    this.lastSampleTimeMs = null;
   }
 }
 

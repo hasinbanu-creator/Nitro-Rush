@@ -486,5 +486,93 @@ describe('NetworkManager Unit Tests', () => {
 
     assert.strictEqual(messageFired, false);
   });
+
+  // ==========================================================================
+  // 6. WebSocket URL Resolution Tests (Phase 4 P1 Fix)
+  // ==========================================================================
+
+  describe('WebSocket URL Resolution (resolveDefaultWebSocketUrl)', () => {
+    it('resolves ws://localhost/ws/game when running on localhost port 80', () => {
+      const url = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'http:',
+        hostname: 'localhost',
+        port: '80',
+      });
+      assert.strictEqual(url, 'ws://localhost/ws/game');
+    });
+
+    it('resolves ws://localhost/ws/game when running on localhost with default/empty port', () => {
+      const url = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'http:',
+        hostname: 'localhost',
+        port: '',
+      });
+      assert.strictEqual(url, 'ws://localhost/ws/game');
+    });
+
+    it('resolves ws://localhost:8080/ws/game for Vite dev server on port 5173', () => {
+      const url = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'http:',
+        hostname: 'localhost',
+        port: '5173',
+      });
+      assert.strictEqual(url, 'ws://localhost:8080/ws/game');
+
+      const url127 = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'http:',
+        hostname: '127.0.0.1',
+        port: '5173',
+      });
+      assert.strictEqual(url127, 'ws://127.0.0.1:8080/ws/game');
+    });
+
+    it('preserves custom port on localhost (e.g. port 3000)', () => {
+      const url = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'http:',
+        hostname: 'localhost',
+        port: '3000',
+      });
+      assert.strictEqual(url, 'ws://localhost:3000/ws/game');
+    });
+
+    it('resolves wss://example.com/ws/game for HTTPS domain on default/empty port or 443', () => {
+      const urlDefault = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'https:',
+        hostname: 'example.com',
+        port: '',
+      });
+      assert.strictEqual(urlDefault, 'wss://example.com/ws/game');
+
+      const url443 = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'https:',
+        hostname: 'example.com',
+        port: '443',
+      });
+      assert.strictEqual(url443, 'wss://example.com/ws/game');
+    });
+
+    it('preserves custom port for HTTPS domain (e.g. 8443)', () => {
+      const url = NetworkManager.resolveDefaultWebSocketUrl({
+        protocol: 'https:',
+        hostname: 'example.com',
+        port: '8443',
+      });
+      assert.strictEqual(url, 'wss://example.com:8443/ws/game');
+    });
+
+    it('prioritizes explicit environment URL override when provided', () => {
+      const override = 'wss://custom-edge.nitrorush.com/ws/game';
+      const url = NetworkManager.resolveDefaultWebSocketUrl(
+        {
+          protocol: 'http:',
+          hostname: 'localhost',
+          port: '5173',
+        },
+        override
+      );
+      assert.strictEqual(url, override);
+    });
+  });
 });
+
 

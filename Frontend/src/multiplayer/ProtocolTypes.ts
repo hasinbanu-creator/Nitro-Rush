@@ -25,12 +25,20 @@ export const MessageType = {
   PLAYER_INPUT: 'PLAYER_INPUT',
   PING: 'PING',
   RECONNECT: 'RECONNECT',
+  CREATE_PRIVATE_ROOM: 'CREATE_PRIVATE_ROOM',
+  JOIN_PRIVATE_ROOM: 'JOIN_PRIVATE_ROOM',
+  LEAVE_PRIVATE_ROOM: 'LEAVE_PRIVATE_ROOM',
+  START_PRIVATE_RACE: 'START_PRIVATE_RACE',
 
   // Server-to-Client Messages (Server Outbound)
   CONNECTION_ACCEPTED: 'CONNECTION_ACCEPTED',
   AUTHENTICATION_RESULT: 'AUTHENTICATION_RESULT',
   MATCHMAKING_STATUS: 'MATCHMAKING_STATUS',
   ROOM_ASSIGNED: 'ROOM_ASSIGNED',
+  PRIVATE_ROOM_CREATED: 'PRIVATE_ROOM_CREATED',
+  PRIVATE_ROOM_JOINED: 'PRIVATE_ROOM_JOINED',
+  PRIVATE_ROOM_UPDATED: 'PRIVATE_ROOM_UPDATED',
+  PRIVATE_ROOM_ERROR: 'PRIVATE_ROOM_ERROR',
   PLAYER_JOINED: 'PLAYER_JOINED',
   PLAYER_LEFT: 'PLAYER_LEFT',
   PLAYER_READY_STATUS: 'PLAYER_READY_STATUS',
@@ -70,6 +78,10 @@ export const ErrorCode = {
   INVALID_INPUT_VALUES: 'INVALID_INPUT_VALUES',
   ROOM_ALREADY_CLOSED: 'ROOM_ALREADY_CLOSED',
   INVALID_RECONNECT_TOKEN: 'INVALID_RECONNECT_TOKEN',
+  INVALID_ROOM_CODE: 'INVALID_ROOM_CODE',
+  NOT_ROOM_HOST: 'NOT_ROOM_HOST',
+  NOT_ENOUGH_PLAYERS: 'NOT_ENOUGH_PLAYERS',
+  PLAYERS_NOT_READY: 'PLAYERS_NOT_READY',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
@@ -161,6 +173,18 @@ export interface PongPayload {
 export interface ErrorPayload {
   errorCode: string;
   message: string;
+}
+
+/**
+ * Sent by server to notify queued clients of matchmaking queue status.
+ */
+export interface MatchmakingStatusPayload {
+  status: 'QUEUED' | 'COLLECTION_WINDOW' | 'MATCHED' | 'CANCELLED';
+  position: number;
+  totalWaiting: number;
+  collectionTimeRemainingSec?: number;
+  minPlayers?: number;
+  maxPlayers?: number;
 }
 
 /**
@@ -355,6 +379,85 @@ export interface PlayerReconnectedPayload {
   playerId: string;
 }
 
+/**
+ * Sent by client to create a private multiplayer room.
+ */
+export interface CreatePrivateRoomPayload {
+  preferredTrackId?: string;
+  preferredCarId?: string;
+}
+
+/**
+ * Sent by client to join a private multiplayer room by code.
+ */
+export interface JoinPrivateRoomPayload {
+  roomCode: string;
+  preferredCarId?: string;
+}
+
+/**
+ * Sent by client to leave a private multiplayer room.
+ */
+export interface LeavePrivateRoomPayload {
+  roomCode?: string;
+  roomId?: string;
+}
+
+/**
+ * Sent by room host to start private race once all are ready.
+ */
+export interface StartPrivateRacePayload {
+  roomCode?: string;
+  roomId?: string;
+}
+
+/**
+ * Sent by server to creator when private room is successfully created.
+ */
+export interface PrivateRoomCreatedPayload {
+  roomCode: string;
+  roomId: string;
+  trackId: string;
+  slotId: string;
+  hostPlayerId: string;
+  maxPlayers: number;
+  players: PlayerSlotInfo[];
+}
+
+/**
+ * Sent by server to joiner when private room is successfully joined.
+ */
+export interface PrivateRoomJoinedPayload {
+  roomCode: string;
+  roomId: string;
+  trackId: string;
+  slotId: string;
+  hostPlayerId: string;
+  maxPlayers: number;
+  players: PlayerSlotInfo[];
+}
+
+/**
+ * Broadcast by server to all private room members on state/membership/ready changes.
+ */
+export interface PrivateRoomUpdatedPayload {
+  roomCode: string;
+  roomId: string;
+  hostPlayerId: string;
+  players: PlayerSlotInfo[];
+  allReady: boolean;
+  readyCount: number;
+  totalPlayers: number;
+}
+
+/**
+ * Sent by server on private room errors (invalid code, not host, etc.).
+ */
+export interface PrivateRoomErrorPayload {
+  errorCode: string;
+  message: string;
+}
+
 // ============================================================================
 // Type-safe mapping between MessageType and Payload
 // ============================================================================
@@ -364,9 +467,17 @@ export interface PayloadMap {
   [MessageType.CONNECTION_ACCEPTED]: ConnectionAcceptedPayload;
   [MessageType.AUTHENTICATE_GUEST]: AuthenticateGuestPayload;
   [MessageType.AUTHENTICATION_RESULT]: AuthenticationResultPayload;
-  [MessageType.MATCHMAKING_STATUS]: unknown;
+  [MessageType.MATCHMAKING_STATUS]: MatchmakingStatusPayload;
   [MessageType.JOIN_MATCHMAKING]: JoinMatchmakingPayload;
   [MessageType.CANCEL_MATCHMAKING]: CancelMatchmakingPayload;
+  [MessageType.CREATE_PRIVATE_ROOM]: CreatePrivateRoomPayload;
+  [MessageType.JOIN_PRIVATE_ROOM]: JoinPrivateRoomPayload;
+  [MessageType.LEAVE_PRIVATE_ROOM]: LeavePrivateRoomPayload;
+  [MessageType.START_PRIVATE_RACE]: StartPrivateRacePayload;
+  [MessageType.PRIVATE_ROOM_CREATED]: PrivateRoomCreatedPayload;
+  [MessageType.PRIVATE_ROOM_JOINED]: PrivateRoomJoinedPayload;
+  [MessageType.PRIVATE_ROOM_UPDATED]: PrivateRoomUpdatedPayload;
+  [MessageType.PRIVATE_ROOM_ERROR]: PrivateRoomErrorPayload;
   [MessageType.ROOM_ASSIGNED]: RoomAssignedPayload;
   [MessageType.PLAYER_JOINED]: PlayerJoinedPayload;
   [MessageType.PLAYER_LEFT]: PlayerLeftPayload;

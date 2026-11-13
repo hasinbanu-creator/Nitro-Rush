@@ -17,6 +17,10 @@ public enum MessageType {
     PLAYER_INPUT(Direction.CLIENT_TO_SERVER),
     PING(Direction.CLIENT_TO_SERVER),
     RECONNECT(Direction.CLIENT_TO_SERVER),
+    CREATE_PRIVATE_ROOM(Direction.CLIENT_TO_SERVER),
+    JOIN_PRIVATE_ROOM(Direction.CLIENT_TO_SERVER),
+    LEAVE_PRIVATE_ROOM(Direction.CLIENT_TO_SERVER),
+    START_PRIVATE_RACE(Direction.CLIENT_TO_SERVER),
 
     // ==========================================
     // Server-to-Client Messages (Server Outbound)
@@ -25,6 +29,10 @@ public enum MessageType {
     AUTHENTICATION_RESULT(Direction.SERVER_TO_CLIENT),
     MATCHMAKING_STATUS(Direction.SERVER_TO_CLIENT),
     ROOM_ASSIGNED(Direction.SERVER_TO_CLIENT),
+    PRIVATE_ROOM_CREATED(Direction.SERVER_TO_CLIENT),
+    PRIVATE_ROOM_JOINED(Direction.SERVER_TO_CLIENT),
+    PRIVATE_ROOM_UPDATED(Direction.SERVER_TO_CLIENT),
+    PRIVATE_ROOM_ERROR(Direction.SERVER_TO_CLIENT),
     PLAYER_JOINED(Direction.SERVER_TO_CLIENT),
     PLAYER_LEFT(Direction.SERVER_TO_CLIENT),
     PLAYER_READY_STATUS(Direction.SERVER_TO_CLIENT),

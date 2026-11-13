@@ -178,4 +178,44 @@ public class RoomSimulationTest {
         assertEquals(5, executed, "Accumulator overload clamping must limit execution to 5 ticks (250ms)");
         assertEquals(0.0, room.getFixedTimestepRunner().getAccumulator(), 1e-6);
     }
+
+    @Test
+    @DisplayName("Out-of-order input protection: older sequence packets cannot overwrite newer accepted inputs")
+    public void testOutOfOrderInputIgnored() {
+        PlayerSlot slot = room.getPlayerSlots().get(0);
+
+        // Client sends newer input sequence 5 with full throttle
+        room.handleInput(p1.getGuestToken(), new PlayerInputPayload("sim-room-1", 5, 1.0, 0.0, 0.0, false, false));
+        assertEquals(5L, slot.getLastAckInputSeq());
+        assertEquals(1.0, slot.getLatestInput().getThrottle(), 1e-6);
+        assertEquals(0.0, slot.getLatestInput().getBrake(), 1e-6);
+
+        // Delayed out-of-order packet arrives with older sequence 4 and full brake
+        room.handleInput(p1.getGuestToken(), new PlayerInputPayload("sim-room-1", 4, 0.0, 1.0, -1.0, false, false));
+
+        // Must remain at sequence 5 with full throttle; stale sequence 4 must be completely ignored
+        assertEquals(5L, slot.getLastAckInputSeq(), "Last ACK sequence must not regress on out-of-order packet");
+        assertEquals(1.0, slot.getLatestInput().getThrottle(), 1e-6, "Latest throttle must not be overwritten by older packet");
+        assertEquals(0.0, slot.getLatestInput().getBrake(), 1e-6, "Latest brake must not be overwritten by older packet");
+    }
+
+    @Test
+    @DisplayName("Duplicate input protection: repeated sequence packets are safely dropped without updating state")
+    public void testDuplicateInputIgnored() {
+        PlayerSlot slot = room.getPlayerSlots().get(0);
+
+        // Sequence 10 accepted
+        room.handleInput(p1.getGuestToken(), new PlayerInputPayload("sim-room-1", 10, 0.5, 0.0, 0.5, true, false));
+        assertEquals(10L, slot.getLastAckInputSeq());
+        assertEquals(0.5, slot.getLatestInput().getSteer(), 1e-6);
+        assertTrue(slot.getLatestInput().isDrift());
+
+        // Exact duplicate sequence 10 arrives with altered parameters
+        room.handleInput(p1.getGuestToken(), new PlayerInputPayload("sim-room-1", 10, 0.0, 1.0, -0.5, false, true));
+
+        // State must remain strictly as accepted in original sequence 10
+        assertEquals(10L, slot.getLastAckInputSeq());
+        assertEquals(0.5, slot.getLatestInput().getSteer(), 1e-6, "Duplicate input must not overwrite steer");
+        assertTrue(slot.getLatestInput().isDrift(), "Duplicate input must not overwrite drift flag");
+    }
 }

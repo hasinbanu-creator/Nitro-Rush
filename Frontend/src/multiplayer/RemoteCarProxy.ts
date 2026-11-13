@@ -138,8 +138,8 @@ export class RemoteCarProxy {
   /**
    * Pushes authoritative telemetry from a RACE_STATE broadcast.
    */
-  public pushSnapshot(telemetry: VehicleTelemetry, serverTimeMs: number): void {
-    this.interpolator.pushSnapshot(telemetry, serverTimeMs);
+  public pushSnapshot(telemetry: VehicleTelemetry, serverTimeMs: number, arrivalTimeMs?: number): void {
+    this.interpolator.pushSnapshot(telemetry, serverTimeMs, arrivalTimeMs);
 
     // Update status and disconnect state from authoritative telemetry
     this.status = telemetry.status;
@@ -157,6 +157,10 @@ export class RemoteCarProxy {
   /**
    * Updates proxy position, rotation, and visual effects based on the interpolation sample.
    */
+  public updateRtt(rttMs: number, smoothedRttMs?: number): void {
+    this.interpolator.updateRtt(rttMs, smoothedRttMs);
+  }
+
   public update(renderTimeMs: number, _dt: number): void {
     const sample: InterpolatedVehicleState | null = this.interpolator.sample(renderTimeMs);
     if (!sample) return;

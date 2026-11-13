@@ -63,8 +63,15 @@ export class MultiplayerRaceScene extends Phaser.Scene {
   public historyBuffer: InputHistoryBuffer = new InputHistoryBuffer(120);
   public reconciler: PredictionReconciler = new PredictionReconciler();
   public inputSeq: number = 0;
-  private inputTimer: number = 0;
-  private readonly inputSendIntervalMs: number = 50; // 20 Hz
+
+  // Fixed Timestep Accumulator & Server Timebase
+  public static readonly FIXED_TIMESTEP_MS: number = 50;
+  public static readonly FIXED_TIMESTEP_SEC: number = 0.050;
+  public static readonly MAX_ACCUMULATOR_MS: number = 250; // Max 5 catch-up ticks
+  private physicsAccumulatorMs: number = 0;
+  private lastServerTimeMs: number = 0;
+  private lastServerTimeReceiptMs: number = 0;
+  private displayedRaceTimeMs: number = 0;
 
   // Race State
   public isCountdownActive: boolean = true;
@@ -120,8 +127,12 @@ export class MultiplayerRaceScene extends Phaser.Scene {
 
     // Reset netcode state
     this.historyBuffer.clear();
+    this.reconciler.reset();
     this.inputSeq = 0;
-    this.inputTimer = 0;
+    this.physicsAccumulatorMs = 0;
+    this.lastServerTimeMs = 0;
+    this.lastServerTimeReceiptMs = 0;
+    this.displayedRaceTimeMs = 0;
     this.isCountdownActive = true;
     this.isRaceFinished = false;
     this.lastCheckpointIndex = -1;
@@ -344,7 +355,11 @@ export class MultiplayerRaceScene extends Phaser.Scene {
 
   private handleRaceStarted(_payload: RaceStartedPayload): void {
     this.isCountdownActive = false;
-    this.hud.startRaceTimer();
+    this.physicsAccumulatorMs = 0;
+    this.lastServerTimeMs = 0;
+    this.lastServerTimeReceiptMs = performance.now();
+    this.displayedRaceTimeMs = 0;
+    this.hud.startRaceTimer(0);
 
     // Destroy countdown overlay if still visible
     if (this.countdownContainer) {
@@ -360,6 +375,12 @@ export class MultiplayerRaceScene extends Phaser.Scene {
   }
 
   private handleRaceState(payload: RaceStatePayload): void {
+    // 0. Update Server-Authoritative Race Timebase
+    if (payload.serverTimeMs > this.lastServerTimeMs) {
+      this.lastServerTimeMs = payload.serverTimeMs;
+      this.lastServerTimeReceiptMs = performance.now();
+    }
+
     // 1. Authoritative Server Reconciliation for Local Player
     const localTelemetry = payload.vehicles.find((v) => this.isLocalPlayer(v.id));
     const ackSeq = payload.ackInputSeq ? payload.ackInputSeq[this.localPlayerId] : undefined;
@@ -378,11 +399,12 @@ export class MultiplayerRaceScene extends Phaser.Scene {
     }
 
     // 2. Feed Remote Vehicle Snapshot Interpolator
+    const arrivalTimeMs = performance.now();
     for (const v of payload.vehicles) {
       if (!this.isLocalPlayer(v.id)) {
         const proxy = this.remoteCars.get(v.id);
         if (proxy) {
-          proxy.pushSnapshot(v, payload.serverTimeMs);
+          proxy.pushSnapshot(v, payload.serverTimeMs, arrivalTimeMs);
         }
       }
     }
@@ -481,29 +503,36 @@ export class MultiplayerRaceScene extends Phaser.Scene {
       if (this.cursors?.right.isDown || this.keyD?.isDown) inputs.steer += 1;
     }
 
-    // 2. Client-Side Prediction for Local Player
+    // 2. Client-Side Prediction for Local Player with Fixed 50ms Accumulator
     if (!this.isCountdownActive) {
-      const isOnTrack = this.track.isPointOnTrack(this.player.x, this.player.y);
-      this.player.update(
-        dt,
-        inputs,
-        false,
-        isOnTrack,
-        this.track.worldWidth,
-        this.track.worldHeight,
-        this.track.physics
-      );
+      // Bounded catch-up: clamp frame delta to prevent spiral of death during backgrounding / stalls
+      const clampedDeltaMs = Math.min(delta, MultiplayerRaceScene.MAX_ACCUMULATOR_MS);
+      this.physicsAccumulatorMs += clampedDeltaMs;
 
-      // 3. 20 Hz Input Streaming to Authoritative Server
-      this.inputTimer += delta;
-      if (this.inputTimer >= this.inputSendIntervalMs) {
-        this.inputTimer -= this.inputSendIntervalMs;
+      // Ensure accumulator does not exceed MAX_ACCUMULATOR_MS (max 5 catch-up ticks)
+      if (this.physicsAccumulatorMs > MultiplayerRaceScene.MAX_ACCUMULATOR_MS) {
+        this.physicsAccumulatorMs = MultiplayerRaceScene.MAX_ACCUMULATOR_MS;
+      }
+
+      while (this.physicsAccumulatorMs >= MultiplayerRaceScene.FIXED_TIMESTEP_MS) {
+        this.physicsAccumulatorMs -= MultiplayerRaceScene.FIXED_TIMESTEP_MS;
         this.inputSeq++;
 
-        // Store prediction snapshot in history buffer
+        const isOnTrack = this.track.isPointOnTrack(this.player.x, this.player.y);
+        this.player.update(
+          MultiplayerRaceScene.FIXED_TIMESTEP_SEC,
+          inputs,
+          false,
+          isOnTrack,
+          this.track.worldWidth,
+          this.track.worldHeight,
+          this.track.physics
+        );
+
+        // Store prediction snapshot in history buffer (1:1 lockstep with fixed physics step)
         this.historyBuffer.push({
           sequenceNumber: this.inputSeq,
-          timestamp: Date.now(),
+          timestamp: performance.now(),
           input: { ...inputs },
           stateSnapshot: {
             x: this.player.x,
@@ -520,7 +549,7 @@ export class MultiplayerRaceScene extends Phaser.Scene {
           },
         });
 
-        // Transmit PLAYER_INPUT frame to server
+        // Transmit 20 Hz PLAYER_INPUT frame to authoritative server
         networkManager.send(MessageType.PLAYER_INPUT, {
           roomId: this.roomId,
           sequenceNumber: this.inputSeq,
@@ -532,18 +561,37 @@ export class MultiplayerRaceScene extends Phaser.Scene {
         });
       }
 
-      // Smooth visual offset from reconciler
+      // Smooth visual position and angular offsets from reconciler
       this.reconciler.updateVisualSmoothing(this.player);
     }
 
-    // 4. Update Remote Competitor Proxies via Snapshot Interpolation
-    const clientNow = Date.now();
+    // 3. Update Remote Competitor Proxies via Snapshot Interpolation
+    const clientNow = performance.now();
+    const latency = networkManager.getLatency();
     for (const proxy of this.remoteCars.values()) {
+      proxy.updateRtt(latency.currentRttMs, latency.smoothedRttMs);
       proxy.update(clientNow, dt);
     }
 
-    // 5. Update HUD (Speedometer, Nitro, Standings, Minimap)
-    this.hud.update(dt, this.player.currentSpeedKMH, this.player.nitroAmount, this.player.isReverseGear);
+    // 4. Update HUD with Server-Synchronized Monotonic Extrapolated Time
+    if (!this.isCountdownActive) {
+      if (this.lastServerTimeReceiptMs > 0) {
+        const extrapolatedTime = this.lastServerTimeMs + (clientNow - this.lastServerTimeReceiptMs);
+        if (extrapolatedTime > this.displayedRaceTimeMs) {
+          this.displayedRaceTimeMs = extrapolatedTime;
+        }
+      } else {
+        this.displayedRaceTimeMs += delta;
+      }
+    }
+
+    this.hud.update(
+      dt,
+      this.player.currentSpeedKMH,
+      this.player.nitroAmount,
+      this.player.isReverseGear,
+      this.displayedRaceTimeMs
+    );
 
     const remotePositions = Array.from(this.remoteCars.values()).map((p) => ({
       id: p.playerId,
@@ -575,6 +623,7 @@ export class MultiplayerRaceScene extends Phaser.Scene {
   }
 
   public cleanup(): void {
+    this.reconciler.reset();
     this.countdownTimerEvent?.destroy();
     this.unsubscribeHandlers.forEach((unsub) => unsub());
     this.unsubscribeHandlers = [];

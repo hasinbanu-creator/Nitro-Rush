@@ -593,18 +593,303 @@ export class MainMenuScene extends Phaser.Scene {
     });
   }
 
+  private keydownListener: ((e: KeyboardEvent) => void) | null = null;
+
   /**
-   * Multiplayer button action: transitions to MultiplayerLobbyScene
+   * Multiplayer button action: opens modal to choose Quick Match, Create Room, or Join Room
    */
   private handleMultiplayerClick(): void {
-    SoundEffects.playClick();
+    SoundEffects.playModalOpen();
+    this.openMultiplayerModal();
+  }
 
+  private launchMultiplayer(data: { mode: 'QUICK_MATCH' | 'CREATE_ROOM' | 'JOIN_ROOM'; roomCode?: string }): void {
+    if (this.keydownListener) {
+      window.removeEventListener('keydown', this.keydownListener);
+      this.keydownListener = null;
+    }
+    if (this.modalContainer) {
+      this.modalContainer.destroy();
+      this.modalContainer = null;
+      this.isModalOpen = false;
+    }
+    SoundEffects.playClick();
     this.cameras.main.flash(200, 0, 240, 255);
     this.time.delayedCall(160, () => {
       this.cameras.main.fadeOut(250, 7, 10, 20);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        this.scene.start('MultiplayerLobbyScene');
+        this.scene.start('MultiplayerLobbyScene', data);
       });
+    });
+  }
+
+  private openMultiplayerModal(): void {
+    if (this.isModalOpen) this.closeModal();
+    this.isModalOpen = true;
+
+    const { width, height } = this.scale;
+    this.modalContainer = this.add.container(width / 2, height / 2).setDepth(100);
+
+    // Dark backdrop overlay
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.82);
+    backdrop.fillRect(-width / 2, -height / 2, width, height);
+    backdrop.setInteractive(
+      new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+      Phaser.Geom.Rectangle.Contains
+    );
+    this.modalContainer.add(backdrop);
+
+    const modalW = 660;
+    const modalH = 490;
+    const frame = this.add.graphics();
+    frame.fillStyle(0x0a1020, 0.98);
+    frame.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
+    frame.lineStyle(2, 0x00f0ff, 0.9);
+    frame.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 10);
+
+    // Header bar
+    frame.fillStyle(0x00f0ff, 0.15);
+    frame.fillRoundedRect(-modalW / 2 + 2, -modalH / 2 + 2, modalW - 4, 46, { tl: 10, tr: 10, bl: 0, br: 0 });
+    this.modalContainer.add(frame);
+
+    const title = this.add.text(0, -modalH / 2 + 23, 'MULTIPLAYER RACING', {
+      fontFamily: '"Impact", "Segoe UI", sans-serif',
+      fontSize: '22px',
+      color: '#ffffff',
+      letterSpacing: 2,
+    }).setOrigin(0.5);
+
+    const tag = this.add.text(0, -modalH / 2 + 56, '// SELECT MODE: GLOBAL QUEUE OR CUSTOM PRIVATE ROOM //', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#00f0ff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.modalContainer.add([title, tag]);
+
+    const cardW = 600;
+
+    // 1. QUICK MATCH CARD (y = -130)
+    const qmY = -130;
+    const qmH = 68;
+    const qmBg = this.add.graphics();
+    qmBg.fillStyle(0x0e172a, 0.9);
+    qmBg.fillRoundedRect(-cardW / 2, qmY - qmH / 2, cardW, qmH, 6);
+    qmBg.lineStyle(1, 0x1e293b, 0.9);
+    qmBg.strokeRoundedRect(-cardW / 2, qmY - qmH / 2, cardW, qmH, 6);
+    this.modalContainer.add(qmBg);
+
+    const qmTitle = this.add.text(-cardW / 2 + 24, qmY - 14, '⚡ QUICK MATCH', {
+      fontFamily: '"Impact", "Segoe UI", sans-serif',
+      fontSize: '18px',
+      color: '#00f0ff',
+      letterSpacing: 1,
+    });
+    const qmDesc = this.add.text(-cardW / 2 + 24, qmY + 10, 'Find opponents in the global matchmaking queue (2-8 racers)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#94a3b8',
+    });
+    this.modalContainer.add([qmTitle, qmDesc]);
+
+    const qmBtn = this.createCyberButton({
+      x: cardW / 2 - 90,
+      y: qmY,
+      width: 140,
+      height: 38,
+      label: 'PLAY NOW',
+      icon: '▶',
+      isPrimary: true,
+      onClick: () => this.launchMultiplayer({ mode: 'QUICK_MATCH' }),
+    });
+    this.modalContainer.add(qmBtn);
+
+    // 2. CREATE PRIVATE ROOM CARD (y = -48)
+    const crY = -48;
+    const crH = 68;
+    const crBg = this.add.graphics();
+    crBg.fillStyle(0x0e172a, 0.9);
+    crBg.fillRoundedRect(-cardW / 2, crY - crH / 2, cardW, crH, 6);
+    crBg.lineStyle(1, 0x1e293b, 0.9);
+    crBg.strokeRoundedRect(-cardW / 2, crY - crH / 2, cardW, crH, 6);
+    this.modalContainer.add(crBg);
+
+    const crTitle = this.add.text(-cardW / 2 + 24, crY - 14, '👑 CREATE PRIVATE ROOM', {
+      fontFamily: '"Impact", "Segoe UI", sans-serif',
+      fontSize: '18px',
+      color: '#fbbf24',
+      letterSpacing: 1,
+    });
+    const crDesc = this.add.text(-cardW / 2 + 24, crY + 10, 'Host a private lobby with a unique 6-character room code', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#94a3b8',
+    });
+    this.modalContainer.add([crTitle, crDesc]);
+
+    const crBtn = this.createCyberButton({
+      x: cardW / 2 - 90,
+      y: crY,
+      width: 140,
+      height: 38,
+      label: 'CREATE',
+      icon: '✚',
+      isPrimary: false,
+      onClick: () => this.launchMultiplayer({ mode: 'CREATE_ROOM' }),
+    });
+    this.modalContainer.add(crBtn);
+
+    // 3. JOIN PRIVATE ROOM CARD (y = 55)
+    const jrY = 55;
+    const jrH = 105;
+    const jrBg = this.add.graphics();
+    jrBg.fillStyle(0x0e172a, 0.9);
+    jrBg.fillRoundedRect(-cardW / 2, jrY - jrH / 2, cardW, jrH, 6);
+    jrBg.lineStyle(1, 0x1e293b, 0.9);
+    jrBg.strokeRoundedRect(-cardW / 2, jrY - jrH / 2, cardW, jrH, 6);
+    this.modalContainer.add(jrBg);
+
+    const jrTitle = this.add.text(-cardW / 2 + 24, jrY - 36, '🔑 JOIN WITH ROOM CODE', {
+      fontFamily: '"Impact", "Segoe UI", sans-serif',
+      fontSize: '18px',
+      color: '#34d399',
+      letterSpacing: 1,
+    });
+    const jrDesc = this.add.text(-cardW / 2 + 24, jrY - 14, 'Type 6-character code (letters and digits, no 0/1/I/O):', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#94a3b8',
+    });
+    this.modalContainer.add([jrTitle, jrDesc]);
+
+    // 6-slot code input boxes
+    let enteredCode = '';
+    const VALID_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const boxSize = 34;
+    const boxSpacing = 8;
+    const startBoxesX = -cardW / 2 + 24 + boxSize / 2;
+    const boxesY = jrY + 20;
+
+    const slotGraphics: Phaser.GameObjects.Graphics[] = [];
+    const slotTexts: Phaser.GameObjects.Text[] = [];
+
+    for (let i = 0; i < 6; i++) {
+      const bx = startBoxesX + i * (boxSize + boxSpacing);
+      const bg = this.add.graphics();
+      const txt = this.add.text(bx, boxesY, '•', {
+        fontFamily: '"Impact", "Segoe UI", monospace',
+        fontSize: '20px',
+        color: '#475569',
+      }).setOrigin(0.5);
+
+      slotGraphics.push(bg);
+      slotTexts.push(txt);
+      this.modalContainer.add([bg, txt]);
+    }
+
+    const joinBtn = this.createCyberButton({
+      x: cardW / 2 - 90,
+      y: jrY + 18,
+      width: 140,
+      height: 38,
+      label: 'JOIN ROOM',
+      icon: '➔',
+      isPrimary: false,
+      onClick: () => {
+        if (enteredCode.length === 6) {
+          this.launchMultiplayer({ mode: 'JOIN_ROOM', roomCode: enteredCode });
+        }
+      },
+    });
+    this.modalContainer.add(joinBtn);
+
+    const updateCodeDisplay = () => {
+      for (let i = 0; i < 6; i++) {
+        const bg = slotGraphics[i];
+        const txt = slotTexts[i];
+        const bx = startBoxesX + i * (boxSize + boxSpacing);
+        bg.clear();
+
+        if (i < enteredCode.length) {
+          bg.fillStyle(0x0f2438, 0.95);
+          bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          bg.lineStyle(2, 0x00f0ff, 1);
+          bg.strokeRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          txt.setText(enteredCode[i]).setColor('#00f0ff');
+        } else if (i === enteredCode.length) {
+          bg.fillStyle(0x1e293b, 0.9);
+          bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          bg.lineStyle(1.5, 0x38bdf8, 0.8);
+          bg.strokeRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          txt.setText('_').setColor('#38bdf8');
+        } else {
+          bg.fillStyle(0x0f172a, 0.8);
+          bg.fillRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          bg.lineStyle(1, 0x334155, 0.7);
+          bg.strokeRoundedRect(bx - boxSize / 2, boxesY - boxSize / 2, boxSize, boxSize, 4);
+          txt.setText('•').setColor('#475569');
+        }
+      }
+    };
+
+    updateCodeDisplay();
+
+    // Keyboard listener for code entry
+    this.keydownListener = (e: KeyboardEvent) => {
+      if (!this.isModalOpen) return;
+
+      if (e.key === 'Backspace') {
+        if (enteredCode.length > 0) {
+          enteredCode = enteredCode.slice(0, -1);
+          SoundEffects.playClick();
+          updateCodeDisplay();
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (enteredCode.length === 6) {
+          this.launchMultiplayer({ mode: 'JOIN_ROOM', roomCode: enteredCode });
+        }
+        return;
+      }
+
+      if (e.key.length === 1 && enteredCode.length < 6) {
+        const upper = e.key.toUpperCase();
+        if (VALID_ALPHABET.includes(upper)) {
+          enteredCode += upper;
+          SoundEffects.playHover();
+          updateCodeDisplay();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', this.keydownListener);
+
+    // Cancel / Close button at bottom
+    const closeBtn = this.createCyberButton({
+      x: 0,
+      y: modalH / 2 - 40,
+      width: 200,
+      height: 40,
+      label: 'BACK TO MENU',
+      icon: '◄',
+      isPrimary: false,
+      onClick: () => this.closeModal(),
+    });
+    this.modalContainer.add(closeBtn);
+
+    // Modal Entrance Animation
+    this.modalContainer.setScale(0.85);
+    this.modalContainer.setAlpha(0);
+    this.tweens.add({
+      targets: this.modalContainer,
+      scaleX: 1,
+      scaleY: 1,
+      alpha: 1,
+      duration: 180,
+      ease: 'Back.easeOut',
     });
   }
 
@@ -867,6 +1152,11 @@ export class MainMenuScene extends Phaser.Scene {
    * Closes the active modal with smooth exit transition
    */
   private closeModal(): void {
+    if (this.keydownListener) {
+      window.removeEventListener('keydown', this.keydownListener);
+      this.keydownListener = null;
+    }
+
     if (!this.modalContainer || !this.isModalOpen) return;
 
     SoundEffects.playModalClose();

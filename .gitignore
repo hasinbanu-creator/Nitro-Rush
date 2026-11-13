@@ -17,6 +17,13 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Database dumps and backups
+*.dump
+*.sql
+deploy/*.dump
+deploy/*.sql
+backup*
+
 # OS / Editor
 .DS_Store
 Thumbs.db

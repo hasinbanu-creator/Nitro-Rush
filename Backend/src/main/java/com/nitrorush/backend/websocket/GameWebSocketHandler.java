@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nitrorush.backend.config.NitroRushProperties;
 import com.nitrorush.backend.exception.ProtocolException;
+import com.nitrorush.backend.matchmaking.MatchmakingService;
 import com.nitrorush.backend.protocol.ErrorCode;
 import com.nitrorush.backend.protocol.MessageEnvelope;
 import com.nitrorush.backend.protocol.MessageType;
 import com.nitrorush.backend.protocol.payload.*;
+import com.nitrorush.backend.room.PlayerSlot;
 import com.nitrorush.backend.room.Room;
 import com.nitrorush.backend.room.RoomManager;
 import com.nitrorush.backend.room.RoomState;
@@ -23,6 +25,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -38,17 +41,20 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final ConnectionManager connectionManager;
     private final GuestSessionManager guestSessionManager;
     private final RoomManager roomManager;
+    private final MatchmakingService matchmakingService;
     private final NitroRushProperties properties;
     private final ObjectMapper objectMapper;
 
     public GameWebSocketHandler(ConnectionManager connectionManager,
                                 GuestSessionManager guestSessionManager,
                                 RoomManager roomManager,
+                                MatchmakingService matchmakingService,
                                 NitroRushProperties properties,
                                 ObjectMapper objectMapper) {
         this.connectionManager = connectionManager;
         this.guestSessionManager = guestSessionManager;
         this.roomManager = roomManager;
+        this.matchmakingService = matchmakingService;
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
@@ -139,6 +145,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 case PING -> handlePing(sessionId, payloadNode);
                 case JOIN_MATCHMAKING -> handleJoinMatchmaking(sessionId, payloadNode);
                 case CANCEL_MATCHMAKING -> handleCancelMatchmaking(sessionId, payloadNode);
+                case CREATE_PRIVATE_ROOM -> handleCreatePrivateRoom(sessionId, payloadNode);
+                case JOIN_PRIVATE_ROOM -> handleJoinPrivateRoom(sessionId, payloadNode);
+                case LEAVE_PRIVATE_ROOM -> handleLeavePrivateRoom(sessionId, payloadNode);
+                case START_PRIVATE_RACE -> handleStartPrivateRace(sessionId, payloadNode);
                 case SELECT_CAR -> handleSelectCar(sessionId, payloadNode);
                 case PLAYER_READY -> handlePlayerReady(sessionId, payloadNode);
                 case PLAYER_INPUT -> handlePlayerInput(sessionId, payloadNode);
@@ -186,7 +196,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         connectionManager.bindGuestToken(sessionId, guestSession.getGuestToken());
 
         AuthenticationResultPayload result = new AuthenticationResultPayload(
-                true, guestSession.getGuestToken(), guestSession.getDisplayName());
+                true, guestSession.getGuestToken(), guestSession.getDisplayName(), guestSession.getPlayerId());
 
         connectionManager.send(sessionId, MessageEnvelope.of(MessageType.AUTHENTICATION_RESULT, result));
     }
@@ -217,28 +227,26 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         String carId = payloadNode != null && payloadNode.has("preferredCarId")
                 ? payloadNode.get("preferredCarId").asText()
                 : "bolt-gt";
-        String explicitRoomId = payloadNode != null && payloadNode.has("roomId")
-                ? payloadNode.get("roomId").asText()
+        String explicitRoomId = payloadNode != null && payloadNode.has("roomId") && !payloadNode.get("roomId").asText().isBlank()
+                ? payloadNode.get("roomId").asText().trim()
                 : null;
 
-        Room room = null;
-        if (explicitRoomId != null && !explicitRoomId.isBlank()) {
-            room = roomManager.getOrCreateRoom(explicitRoomId, trackId);
+        if (explicitRoomId != null) {
+            // Direct room joining preserved for test utilities and explicit room joins
+            if (matchmakingService.isQueued(session.getGuestToken())) {
+                throw new ProtocolException(ErrorCode.ALREADY_IN_QUEUE, "Player is currently in matchmaking queue");
+            }
+            Optional<Room> existingRoom = roomManager.findRoomByGuestToken(session.getGuestToken());
+            if (existingRoom.isPresent() && !existingRoom.get().getRoomId().equalsIgnoreCase(explicitRoomId)) {
+                throw new ProtocolException(ErrorCode.ALREADY_IN_RACE,
+                        "Player is already in another room: " + existingRoom.get().getRoomId());
+            }
+            Room room = roomManager.getOrCreateRoom(explicitRoomId, trackId);
+            roomManager.joinRoom(room.getRoomId(), session, carId, sessionId);
         } else {
-            // Find existing room in WAITING state with capacity, or create new room
-            for (Room r : roomManager.getAllRooms()) {
-                if (r.getState() == RoomState.WAITING && r.getPlayerCount() < Room.MAX_PLAYERS
-                        && r.getTrack().getId().equalsIgnoreCase(trackId)) {
-                    room = r;
-                    break;
-                }
-            }
-            if (room == null) {
-                room = roomManager.createRoom(trackId);
-            }
+            // Global matchmaking queue
+            matchmakingService.joinQueue(session, trackId, carId, sessionId);
         }
-
-        roomManager.joinRoom(room.getRoomId(), session, carId, sessionId);
     }
 
     private void handleCancelMatchmaking(String sessionId, JsonNode payloadNode) {
@@ -247,7 +255,155 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             connectionManager.sendError(sessionId, ErrorCode.NOT_IN_QUEUE, "Not in queue");
             return;
         }
-        roomManager.leaveRoom(session.getGuestToken());
+
+        String guestToken = session.getGuestToken();
+        if (matchmakingService.isQueued(guestToken)) {
+            matchmakingService.cancelQueue(guestToken);
+            return;
+        }
+
+        boolean left = roomManager.leaveRoom(guestToken);
+        if (!left) {
+            connectionManager.sendError(sessionId, ErrorCode.NOT_IN_QUEUE,
+                    "Player is not in matchmaking queue or active room");
+        }
+    }
+
+    private void handleCreatePrivateRoom(String sessionId, JsonNode payloadNode) {
+        GuestSession session = getAuthenticatedSession(sessionId);
+        if (session == null) {
+            connectionManager.sendError(sessionId, ErrorCode.INVALID_CREDENTIALS,
+                    "Session must be authenticated before creating a room");
+            return;
+        }
+
+        if (matchmakingService.isQueued(session.getGuestToken())) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(
+                    ErrorCode.ALREADY_IN_QUEUE.getCode(), "Player is currently in matchmaking queue");
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, ErrorCode.ALREADY_IN_QUEUE, "Player is currently in matchmaking queue");
+            return;
+        }
+
+        String trackId = payloadNode != null && payloadNode.has("preferredTrackId")
+                ? payloadNode.get("preferredTrackId").asText()
+                : "coastal-rush";
+        String carId = payloadNode != null && payloadNode.has("preferredCarId")
+                ? payloadNode.get("preferredCarId").asText()
+                : "bolt-gt";
+
+        try {
+            Room room = roomManager.createPrivateRoom(trackId, session, carId, sessionId);
+            PlayerSlot mySlot = room.getPlayerSlots().stream()
+                    .filter(s -> session.getGuestToken().equals(s.getGuestToken()))
+                    .findFirst().orElseThrow();
+            List<PlayerSlotInfo> slotInfos = room.getPlayerSlots().stream().map(PlayerSlot::toSlotInfo).toList();
+
+            PrivateRoomCreatedPayload payload = new PrivateRoomCreatedPayload(
+                    room.getRoomCode(),
+                    room.getRoomId(),
+                    room.getTrack().getId(),
+                    mySlot.getSlotId(),
+                    room.getHostPlayerId(),
+                    Room.MAX_PLAYERS,
+                    slotInfos
+            );
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_CREATED, payload));
+        } catch (ProtocolException pe) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(pe.getErrorCode().getCode(), pe.getMessage());
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, pe.getErrorCode(), pe.getMessage());
+        }
+    }
+
+    private void handleJoinPrivateRoom(String sessionId, JsonNode payloadNode) {
+        GuestSession session = getAuthenticatedSession(sessionId);
+        if (session == null) {
+            connectionManager.sendError(sessionId, ErrorCode.INVALID_CREDENTIALS,
+                    "Session must be authenticated before joining a room");
+            return;
+        }
+
+        if (matchmakingService.isQueued(session.getGuestToken())) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(
+                    ErrorCode.ALREADY_IN_QUEUE.getCode(), "Player is currently in matchmaking queue");
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, ErrorCode.ALREADY_IN_QUEUE, "Player is currently in matchmaking queue");
+            return;
+        }
+
+        if (payloadNode == null || !payloadNode.has("roomCode") || payloadNode.get("roomCode").asText().isBlank()) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(
+                    ErrorCode.INVALID_ROOM_CODE.getCode(), "Missing or empty roomCode");
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, ErrorCode.INVALID_ROOM_CODE, "Missing or empty roomCode");
+            return;
+        }
+
+        String roomCode = payloadNode.get("roomCode").asText();
+        String carId = payloadNode.has("preferredCarId") ? payloadNode.get("preferredCarId").asText() : "bolt-gt";
+
+        try {
+            Room room = roomManager.joinPrivateRoom(roomCode, session, carId, sessionId);
+            PlayerSlot mySlot = room.getPlayerSlots().stream()
+                    .filter(s -> session.getGuestToken().equals(s.getGuestToken()))
+                    .findFirst().orElseThrow();
+            List<PlayerSlotInfo> slotInfos = room.getPlayerSlots().stream().map(PlayerSlot::toSlotInfo).toList();
+
+            PrivateRoomJoinedPayload payload = new PrivateRoomJoinedPayload(
+                    room.getRoomCode(),
+                    room.getRoomId(),
+                    room.getTrack().getId(),
+                    mySlot.getSlotId(),
+                    room.getHostPlayerId(),
+                    Room.MAX_PLAYERS,
+                    slotInfos
+            );
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_JOINED, payload));
+        } catch (ProtocolException pe) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(pe.getErrorCode().getCode(), pe.getMessage());
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, pe.getErrorCode(), pe.getMessage());
+        }
+    }
+
+    private void handleLeavePrivateRoom(String sessionId, JsonNode payloadNode) {
+        GuestSession session = getAuthenticatedSession(sessionId);
+        if (session == null) {
+            connectionManager.sendError(sessionId, ErrorCode.NOT_IN_QUEUE, "Not authenticated or not in room");
+            return;
+        }
+
+        boolean left = roomManager.leaveRoom(session.getGuestToken());
+        if (!left) {
+            connectionManager.sendError(sessionId, ErrorCode.NOT_IN_QUEUE, "Player is not in any active room");
+        }
+    }
+
+    private void handleStartPrivateRace(String sessionId, JsonNode payloadNode) {
+        GuestSession session = getAuthenticatedSession(sessionId);
+        if (session == null) {
+            connectionManager.sendError(sessionId, ErrorCode.INVALID_CREDENTIALS,
+                    "Session must be authenticated before starting a race");
+            return;
+        }
+
+        String roomCodeOrId = null;
+        if (payloadNode != null) {
+            if (payloadNode.has("roomCode") && !payloadNode.get("roomCode").asText().isBlank()) {
+                roomCodeOrId = payloadNode.get("roomCode").asText().trim();
+            } else if (payloadNode.has("roomId") && !payloadNode.get("roomId").asText().isBlank()) {
+                roomCodeOrId = payloadNode.get("roomId").asText().trim();
+            }
+        }
+
+        try {
+            roomManager.startPrivateRace(session.getGuestToken(), roomCodeOrId);
+        } catch (ProtocolException pe) {
+            PrivateRoomErrorPayload errPayload = new PrivateRoomErrorPayload(pe.getErrorCode().getCode(), pe.getMessage());
+            connectionManager.send(sessionId, MessageEnvelope.of(MessageType.PRIVATE_ROOM_ERROR, errPayload));
+            connectionManager.sendError(sessionId, pe.getErrorCode(), pe.getMessage());
+        }
     }
 
     private void handleSelectCar(String sessionId, JsonNode payloadNode) {
@@ -331,6 +487,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (!session.isOpen()) {
             Optional<PlayerConnection> removed = connectionManager.remove(sessionId);
             String guestToken = removed.map(PlayerConnection::getGuestToken).orElse(null);
+            matchmakingService.handleDisconnect(sessionId, guestToken);
             roomManager.handleDisconnect(sessionId, guestToken);
         }
     }
@@ -340,6 +497,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         String sessionId = session.getId();
         Optional<PlayerConnection> removed = connectionManager.remove(sessionId);
         String guestToken = removed.map(PlayerConnection::getGuestToken).orElse(null);
+        matchmakingService.handleDisconnect(sessionId, guestToken);
         roomManager.handleDisconnect(sessionId, guestToken);
         log.info("WebSocket connection closed: sessionId={}, guestToken={}, status={}", sessionId, guestToken, status);
     }

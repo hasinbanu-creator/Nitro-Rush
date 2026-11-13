@@ -1,14 +1,34 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
+  shutdown: graceful
 
 spring:
   application:
     name: nitro-rush-backend
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
 
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:nitro_rush}
+    username: ${POSTGRES_USER:nitro}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
 nitrorush:
   websocket:
     path: /ws/game
     allowed-origins:
+      - ${PRODUCTION_ORIGIN:http://localhost}
+      - http://localhost
+      - http://127.0.0.1
       - http://localhost:5173
       - http://127.0.0.1:5173
       - http://localhost:3000
@@ -22,5 +42,20 @@ nitrorush:
 logging:
   level:
     root: INFO
-    com.nitrorush.backend: DEBUG
+    com.nitrorush.backend: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+nitrorush:
+  websocket:
+    allowed-origins:
+      - ${PRODUCTION_ORIGIN:http://localhost}
+      - http://localhost
+      - http://127.0.0.1
+
+
 
